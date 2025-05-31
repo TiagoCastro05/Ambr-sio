@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { HistoricoService } from '../services/historico.service';
+import { Storage } from '@ionic/storage-angular';
 
 interface Produto {
   loja: string;
@@ -39,9 +40,25 @@ export class ListaDetalhePage {
   constructor(
     private historicoService: HistoricoService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private storage: Storage // <-- add this
   ) {
     this.nomeLista = this.route.snapshot.paramMap.get('nome') || '';
+    this.initStorage();
+  }
+
+  async initStorage() {
+    await this.storage.create();
+    await this.loadProdutos();
+  }
+
+  async loadProdutos() {
+    const produtos = await this.storage.get(`produtos_${this.nomeLista}`);
+    this.produtos = produtos || [];
+  }
+
+  async saveProdutos() {
+    await this.storage.set(`produtos_${this.nomeLista}`, this.produtos);
   }
 
   onAdicionarProdutos() {
@@ -57,38 +74,40 @@ export class ListaDetalhePage {
     this.router.navigate(['/tabs/tab3']);
   }
 
- onSaveManual() {
-  if (
-    this.loja.trim() &&
-    this.tipoProduto.trim() &&
-    this.produto.trim() &&
-    this.quantidade.trim() &&
-    this.validade.trim() &&
-    this.preco.trim()
-  ) {
-    this.produtos.push({
-      loja: this.loja,
-      tipoProduto: this.tipoProduto,
-      produto: this.produto,
-      quantidade: this.quantidade,
-      validade: this.validade,
-      preco: this.preco,
-    });
+  async onSaveManual() {
+    if (
+      this.loja.trim() &&
+      this.tipoProduto.trim() &&
+      this.produto.trim() &&
+      this.quantidade.trim() &&
+      this.validade.trim() &&
+      this.preco.trim()
+    ) {
+      this.produtos.push({
+        loja: this.loja,
+        tipoProduto: this.tipoProduto,
+        produto: this.produto,
+        quantidade: this.quantidade,
+        validade: this.validade,
+        preco: this.preco,
+      });
 
-    // Add to historico with correct types
-    this.historicoService.adicionar({
-      nome: this.produto,
-      quantidade: Number(this.quantidade)
-    });
+      await this.saveProdutos(); // <-- persist to storage
 
-    this.showManualForm = false;
-    // Reset fields
-    this.loja = '';
-    this.tipoProduto = '';
-    this.produto = '';
-    this.quantidade = '';
-    this.validade = '';
-    this.preco = '';
+      // Add to historico with correct types
+      this.historicoService.adicionar({
+        nome: this.produto,
+        quantidade: Number(this.quantidade)
+      });
+
+      this.showManualForm = false;
+      // Reset fields
+      this.loja = '';
+      this.tipoProduto = '';
+      this.produto = '';
+      this.quantidade = '';
+      this.validade = '';
+      this.preco = '';
+    }
   }
-}
 }
