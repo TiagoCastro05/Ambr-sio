@@ -1,0 +1,29 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Perfil</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding" style="--background: #fff;">
+  <div style="display: flex; flex-direction: column; align-items: center; margin-top: 32px;">
+    <ion-avatar style="width: 100px; height: 100px; margin-bottom: 16px;">
+      <ion-icon name="person-circle-outline" style="font-size: 100px; color: #888;"></ion-icon>
+    </ion-avatar>
+    <h2 style="margin: 0;">{{ user.nome || 'Nome do Utilizador' }}</h2>
+    <p style="margin: 4px 0 0 0; color: #888;">{{ user.email || 'email@exemplo.com' }}</p>
+    <p style="margin: 4px 0 24px 0; color: #888;">{{ user.telefone || 'Telefone' }}</p>
+
+    <ion-list style="width: 100%; max-width: 350px; margin-top: 32px;">
+      <ion-item button>
+        <ion-icon name="settings-outline" slot="start"></ion-icon>
+        <ion-label>Definições</ion-label>
+      </ion-item>
+      <ion-item>
+        <ion-label>Cor do App</ion-label>
+        <input type="color" [value]="color" (input)="changeColor($event)" style="width: 40px; height: 40px; border: none; background: none;" />
+      </ion-item>
+    </ion-list>
+  </div>
+</ion-content>
+
+

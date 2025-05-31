@@ -1,13 +1,17 @@
 import { Component } from '@angular/core';
+import { IonicModule } from '@ionic/angular';
+import { UserService } from '../services/user.service';
+import { ExploreContainerComponentModule } from '../explore-container/explore-container.module';
 
 @Component({
   selector: 'app-tab3',
-  templateUrl: 'tab3.page.html',
-  styleUrls: ['tab3.page.scss'],
-  standalone: false,
+  standalone: true,
+  imports: [IonicModule, ExploreContainerComponentModule],
+  templateUrl: './tab3.page.html',
+  styleUrls: ['./tab3.page.scss'],
 })
 export class Tab3Page {
+  color = this.userService.getColor();
 
-  constructor() {}
-
+  constructor(private userService: UserService) {}
 }

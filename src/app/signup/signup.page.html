@@ -1,0 +1,32 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>signup</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;">
+    <ion-list lines="none" style="width:90%;max-width:350px;">
+      <ion-item>
+        <ion-label position="stacked">E-mail</ion-label>
+        <ion-input type="email" [(ngModel)]="email"></ion-input>
+      </ion-item>
+      <ion-item>
+        <ion-label position="stacked">Nome do Utilizador</ion-label>
+        <ion-input type="text" [(ngModel)]="username"></ion-input>
+      </ion-item>
+      <ion-item>
+        <ion-label position="stacked">Palavra-Passe</ion-label>
+        <ion-input type="password" [(ngModel)]="password"></ion-input>
+      </ion-item>
+      <ion-item>
+        <ion-label position="stacked">Palavra-Passe</ion-label>
+        <ion-input type="password" [(ngModel)]="confirmPassword"></ion-input>
+      </ion-item>
+    </ion-list>
+    <div style="display:flex;justify-content:space-between;width:90%;max-width:350px;margin-top:16px;">
+      <ion-button fill="outline" color="secondary" expand="block" (click)="onBack()">Voltar</ion-button>
+      <ion-button expand="block" (click)="onSignup()">Avançar</ion-button>
+    </div>
+  </div>
+</ion-content>

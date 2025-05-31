@@ -1,0 +1,28 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>login</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;">
+    <img src="assets/logo.png" style="width:100px;margin-bottom:16px;" *ngIf="false"><!-- Replace with your logo if needed -->
+    <ion-icon name="person-circle-outline" style="font-size:120px;color:#cbbcf6;background:#ede6fa;border-radius:50%;margin-bottom:16px;"></ion-icon>
+    <h2 style="font-weight:bold;">Nome Utilizador</h2>
+    <ion-list lines="none" style="width:90%;max-width:350px;">
+      <ion-item>
+        <ion-label position="stacked">E-mail</ion-label>
+        <ion-input type="email"></ion-input>
+      </ion-item>
+      <ion-item>
+        <ion-label position="stacked">Palavra-Passe</ion-label>
+        <ion-input type="password"></ion-input>
+      </ion-item>
+    </ion-list>
+    <div style="display:flex;justify-content:space-between;width:90%;max-width:350px;margin-top:16px;">
+      <ion-button fill="outline" color="secondary" expand="block" (click)="onSignup()">Criar Conta</ion-button>
+      <ion-button expand="block" (click)="onLogin()">Avançar</ion-button>
+    </div>
+    <ion-text color="primary" style="margin-top:12px;cursor:pointer;" (click)="onForgotPassword()">Esqueci-me da Palavra-Passe</ion-text>
+  </div>
+</ion-content>

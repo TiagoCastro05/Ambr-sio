@@ -1,0 +1,59 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/tabs/tab4" text="Voltar"></ion-back-button>
+    </ion-buttons>
+    <ion-title>{{ nomeLista }}</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding" style="--background: #fff; min-height: 100vh;">
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:40vh;">
+    <!-- Produtos list (now on top) -->
+    <div *ngIf="produtos.length > 0" style="margin-bottom:32px;display:flex;flex-direction:column;align-items:center;width:100%;">
+      <ion-card *ngFor="let p of produtos" style="width: 260px; margin-bottom: 12px;">
+        <ion-card-header>
+          <ion-card-title>{{ p.produto }}</ion-card-title>
+          <ion-card-subtitle>{{ p.tipoProduto }} - {{ p.loja }}</ion-card-subtitle>
+        </ion-card-header>
+        <ion-card-content>
+          <div>Quantidade: {{ p.quantidade }}</div>
+          <div>Validade: {{ p.validade }}</div>
+          <div>Preço: {{ p.preco }}</div>
+        </ion-card-content>
+      </ion-card>
+    </div>
+
+    <!-- Adicionar Produtos Button -->
+    <ion-button fill="clear" *ngIf="!showProductOptions && !showManualForm" (click)="onAdicionarProdutos()" style="border:2px solid #222; border-radius:12px; width:220px; height:140px; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#fff;">
+      <ion-icon name="add-outline" style="font-size:64px; color:#222;"></ion-icon>
+      <div style="font-size:1.2rem; color:#222; margin-top:8px;">Adicionar Produtos</div>
+    </ion-button>
+
+    <!-- Choose Manual or Scan -->
+    <div *ngIf="showProductOptions" style="background:#ede6fa; border-radius:16px; padding:24px; width:90%; max-width:350px; text-align:center;">
+      <div style="font-weight:500; font-size:1.1rem; margin-bottom:8px;">Como quer adicionar o produto?</div>
+      <div style="font-size:0.95rem; margin-bottom:16px;">
+        Escolha "Scan" para usar a câmara ou "Manualmente" para inserir os dados.
+      </div>
+      <div style="display:flex; justify-content:space-around;">
+        <ion-button fill="clear" color="primary" (click)="onScan()">Scan</ion-button>
+        <ion-button fill="clear" color="secondary" (click)="onManual()">Manualmente</ion-button>
+      </div>
+      <ion-button fill="clear" color="medium" (click)="showProductOptions = false" style="margin-top:12px;">Cancelar</ion-button>
+    </div>
+
+    <!-- Manual Product Form -->
+    <div *ngIf="showManualForm" style="background:#ede6fa; border-radius:16px; padding:24px; width:90%; max-width:350px; text-align:center;">
+      <div style="font-weight:500; font-size:1.1rem; margin-bottom:8px;">Adicionar Produto Manualmente</div>
+      <ion-input [(ngModel)]="loja" placeholder="Loja" style="margin-bottom:8px; background:#000; color:#fff; border-radius:8px; padding-left:12px;"></ion-input>
+      <ion-input [(ngModel)]="tipoProduto" placeholder="Tipo de produto" style="margin-bottom:8px; background:#000; color:#fff; border-radius:8px; padding-left:12px;"></ion-input>
+      <ion-input [(ngModel)]="produto" placeholder="Produto" style="margin-bottom:8px; background:#000; color:#fff; border-radius:8px; padding-left:12px;"></ion-input>
+      <ion-input [(ngModel)]="quantidade" placeholder="Quantidade" style="margin-bottom:8px; background:#000; color:#fff; border-radius:8px; padding-left:12px;"></ion-input>
+      <ion-input [(ngModel)]="validade" placeholder="Data de validade" style="margin-bottom:8px; background:#000; color:#fff; border-radius:8px; padding-left:12px;"></ion-input>
+      <ion-input [(ngModel)]="preco" placeholder="Preço" style="margin-bottom:8px; background:#000; color:#fff; border-radius:8px; padding-left:12px;"></ion-input>
+      <ion-button expand="block" (click)="onSaveManual()">Guardar Produto</ion-button>
+      <ion-button fill="clear" color="medium" (click)="showManualForm = false" style="margin-top:12px;">Cancelar</ion-button>
+    </div>
+  </div>
+</ion-content>
