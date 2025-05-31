@@ -4,8 +4,20 @@ import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { UserService } from '../services/user.service';
-import { ProductService, Product } from '../services/product.service'; // <-- Import Product
-import { ListService, Lista } from '../services/list.service';
+import { ProductService, Product } from '../services/product.service';
+import { ListService } from '../services/list.service';
+import { Storage } from '@ionic/storage-angular';
+
+// Add your interfaces here
+interface Produto {
+  nome: string;
+  quantidade: number;
+}
+
+interface Lista {
+  nome: string;
+  products: Produto[];
+}
 
 @Component({
   selector: 'app-tab4',
@@ -24,27 +36,45 @@ export class Tab4Page {
   productNomes: string[] = [];
   productQuantidades: number[] = [];
 
+  listas: Lista[] = [];
+
   constructor(
     private userService: UserService,
     private productService: ProductService, // <-- Inject here
     private listService: ListService,
-  ) {}
-
-  get listas(): Lista[] {
-    return this.listService.listas;
+    private storage: Storage // <-- Add this
+  ) {
+    this.initStorage();
   }
+
+  async initStorage() {
+    await this.storage.create();
+    await this.loadListas();
+  }
+
+  async loadListas() {
+    const listas = await this.storage.get('listas');
+    this.listas = listas || [];
+    this.listService.listas = this.listas; // Keep service in sync if needed
+  }
+
+  async saveListas() {
+    await this.storage.set('listas', this.listas);
+  }
+
 
   onAddLista() {
     this.showCreateInput = true;
     this.nomeLista = '';
   }
 
-  onSaveLista() {
+  async onSaveLista() {
     if (this.nomeLista.trim()) {
-      this.listService.listas.push({
+      this.listas.push({
         nome: this.nomeLista.trim(),
         products: []
       });
+      await this.saveListas(); // Save to storage
       this.showCreateInput = false;
       this.nomeLista = '';
     }
@@ -68,7 +98,7 @@ export class Tab4Page {
       nome: productNome.trim(),
       quantidade: productQuantidade
     };
-    this.listService.listas[listIndex].products.push(product);
-    // No need to call productService.addProduct if you want historico to be derived from lists
+    this.listas[listIndex].products.push(product);
+    await this.saveListas(); // Save updated listas to storage
   }
 }
