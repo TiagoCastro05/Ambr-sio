@@ -1,0 +1,15 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/tabs/tab1" text="Voltar"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Histórico de Produtos</ion-title>
+  </ion-toolbar>
+</ion-header>
+<ion-content class="ion-padding" style="--background: #fff;">
+  <ul style="list-style: none; padding: 0; margin: 0;">
+    <li *ngFor="let product of products" style="padding: 12px 0; border-bottom: 1px solid #eee;">
+      <span style="font-size: 1.1rem; color: #222;">{{ product.nome }}</span>
+    </li>
+  </ul>
+</ion-content>
