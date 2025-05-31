@@ -1,16 +1,38 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { IonicModule } from '@ionic/angular';
-import { UserService } from '../services/user.service';
+import { CommonModule } from '@angular/common';
+
 
 @Component({
   selector: 'app-tab1',
-  standalone: true,
-  imports: [IonicModule],
   templateUrl: './tab1.page.html',
   styleUrls: ['./tab1.page.scss'],
+  standalone: true,
+  imports: [IonicModule, CommonModule]
 })
-export class Tab1Page {
-  color = this.userService.getColor();
+export class Tab1Page implements OnInit, OnDestroy {
+  images: string[] = [
+    'assets/imagens/Cinemajpg.jpg',
+    'assets/imagens/vitinha.png',
+    'assets/your-image3.jpg'
+  ];
+  currentImageIndex = 0;
+  intervalId: any;
 
-  constructor(private userService: UserService) {}
+  notificationsActive = false;
+
+  ngOnInit() {
+    this.intervalId = setInterval(() => {
+      this.currentImageIndex = (this.currentImageIndex + 1) % this.images.length;
+    }, 7000);
+  }
+
+  ngOnDestroy() {
+    clearInterval(this.intervalId);
+  }
+
+  toggleNotifications() {
+    this.notificationsActive = !this.notificationsActive;
+  }
+
 }

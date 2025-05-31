@@ -1,0 +1,130 @@
+.top-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 24px 16px 8px 16px;
+}
+.top-icon {
+  font-size: 2.2rem;
+  color: #222;
+}
+.profile-icon {
+  font-size: 2.2rem;
+  color: #a084e8;
+}
+.searchbar {
+  flex: 1;
+  --background: #fff;
+  --box-shadow: none;
+  min-width: 0;
+  max-width: 220px;
+}
+.welcome-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 20px 16px 0 16px;
+}
+.welcome-text {
+  font-size: 2.2rem;
+  font-weight: bold;
+  color: #222;
+  line-height: 1.1;
+}
+.bell-icon {
+  font-size: 2.2rem;
+  color: #222;
+}
+.slideshow {
+  width: 95vw;
+  max-width: 360px;
+  height: 140px;
+  margin: 20px auto 32px auto;
+  overflow: hidden;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px #0002;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.slideshow img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+@media (max-width: 500px) {
+  .slideshow {
+    max-width: 98vw;
+    height: 110px;
+  }
+}
+.menu-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 24px 0 28px 20px;
+  color: #222;
+}
+.menu-rectangles {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+.menu-rectangle {
+  min-height: 110px;
+  border: 3px solid #222;
+  border-radius: 24px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  margin-bottom: 0;
+  padding: 18px 0;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: #222;
+  gap: 8px;
+}
+.menu-rectangle.large {
+  width: 92%;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin-bottom: 36px;
+  padding: 18px 24px;
+  gap: 24px;
+}
+.menu-rectangle-row {
+  display: flex;
+  width: 92%;
+  justify-content: space-between;
+  gap: 32px;
+}
+.menu-rectangle-row .menu-rectangle {
+  width: 48%;
+}
+.menu-rectangle ion-icon {
+  font-size: 2.2rem;
+  color: #222;
+}
+.menu-rectangle.large ion-icon {
+  font-size: 3rem;
+}
+@media (max-width: 500px) {
+  .slideshow {
+    max-width: 98vw;
+    height: 110px;
+  }
+  .menu-rectangle.large,
+  .menu-rectangle-row {
+    width: 98%;
+  }
+  .menu-rectangle-row .menu-rectangle {
+    width: 49%;
+  }
+}

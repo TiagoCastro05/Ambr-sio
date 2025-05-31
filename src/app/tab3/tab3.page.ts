@@ -11,7 +11,7 @@ import { ExploreContainerComponentModule } from '../explore-container/explore-co
   styleUrls: ['./tab3.page.scss'],
 })
 export class Tab3Page {
-  color = this.userService.getColor();
+
 
   constructor(private userService: UserService) {}
 }

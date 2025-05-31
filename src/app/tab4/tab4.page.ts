@@ -16,7 +16,7 @@ export class Tab4Page {
   showCreateInput = false;
   nomeLista = '';
   listas: string[] = [];
-  color = this.userService.getColor();
+
 
   constructor(private userService: UserService) {}
 

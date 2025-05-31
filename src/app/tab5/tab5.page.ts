@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { IonicModule } from '@ionic/angular';
 import { UserService } from '../services/user.service';
 
@@ -9,15 +9,18 @@ import { UserService } from '../services/user.service';
   templateUrl: './tab5.page.html',
   styleUrls: ['./tab5.page.scss'],
 })
-export class Tab5Page {
-  user = this.userService.getUser() || { nome: '', email: '', telefone: '' };
-  color = this.userService.getColor();
+export class Tab5Page implements OnInit {
+  user: { nome?: string; email?: string; telefone?: string } = {};
+  color = '#fff';
 
   constructor(private userService: UserService) {}
 
+  async ngOnInit() {
+    this.user = await this.userService.getUser();
+  }
+
   changeColor(event: any) {
     this.color = event.target.value;
-    this.userService.setColor(this.color);
     document.documentElement.style.setProperty('--app-bg', this.color);
     document.documentElement.style.setProperty('--ion-color-primary', this.color);
   }

@@ -1,69 +1,48 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-buttons slot="start">
-      <ion-icon name="book-outline" slot="icon-only" style="font-size: 28px; margin-right: 8px;"></ion-icon>
-    </ion-buttons>
-    <ion-searchbar placeholder="Pesquisa" style="flex: 1; margin-right: 8px;"></ion-searchbar>
-    <ion-buttons slot="end">
-      <ion-avatar>
-        <ion-icon name="person-circle-outline" style="font-size: 32px; background: #e6e6fa; border-radius: 50%;"></ion-icon>
-      </ion-avatar>
-    </ion-buttons>
-  </ion-toolbar>
-</ion-header>
+<ion-content style="--background: #fff;">
+  <!-- Top row: logo, search bar, profile icon -->
+  <div class="top-row">
+    <ion-icon name="happy-outline" class="top-icon"></ion-icon>
+    <ion-searchbar placeholder="Pesquisa" class="searchbar"></ion-searchbar>
+    <ion-icon name="person-circle-outline" class="profile-icon"></ion-icon>
+  </div>
 
-<ion-content class="ion-padding" style="--background: #fff;">
-  <div style="padding: 16px;">
-    <h1 style="font-weight: bold; font-size: 2rem; margin-bottom: 0;">Bem-vindo<br>ao Ambrósio</h1>
-    <ion-card style="margin-top: 16px;">
-      <ion-item lines="none">
-        <ion-thumbnail slot="start">
-          <img src="https://images.openfoodfacts.org/images/products/560/100/914/6852/front_fr.4.400.jpg" alt="Produto">
-        </ion-thumbnail>
-        <ion-label>
-          <h2>Barra Cereais Chocolate</h2>
-          <p>Continente</p>
-          <p style="color: #e53935; font-weight: bold;">€1,79</p>
-        </ion-label>
-        <ion-button fill="clear" color="danger" slot="end">
-          <ion-icon name="pricetag-outline"></ion-icon>
-        </ion-button>
-      </ion-item>
-    </ion-card>
+  <!-- Welcome and bell row -->
+  <div class="welcome-row">
+    <div class="welcome-text">
+      Bem-vindo<br>ao Ambrósio
+    </div>
+    <ion-icon
+      [name]="notificationsActive ? 'notifications' : 'notifications-outline'"
+      class="bell-icon"
+      (click)="toggleNotifications()"
+      [style.color]="notificationsActive ? '#222' : '#222'">
+    </ion-icon>
+  </div>
+  <!-- Slideshow below the bell -->
+  <div class="slideshow">
+    <img [src]="images[currentImageIndex]" alt="Promoção" />
+  </div>
 
-    <div style="margin-top: 24px;">
-      <h2 style="font-size: 1.2rem; margin-bottom: 12px;">O teu Menu</h2>
-      <ion-grid>
-        <ion-row>
-          <ion-col size="12">
-            <ion-card button>
-              <ion-item lines="none">
-                <ion-icon name="list-outline" slot="start" style="font-size: 32px;"></ion-icon>
-                <ion-label>Listas</ion-label>
-              </ion-item>
-            </ion-card>
-          </ion-col>
-        </ion-row>
-        <ion-row>
-          <ion-col size="6.5">
-            <ion-card button>
-              <ion-item lines="none">
-                <ion-icon name="time-outline" slot="start" style="font-size: 28px;"></ion-icon>
-                <ion-label>Histórico</ion-label>
-              </ion-item>
-            </ion-card>
-          </ion-col>
-          <ion-col size="6.5">
-            <ion-card button>
-              <ion-item lines="none">
-                <ion-icon name="stats-chart-outline" slot="start" style="font-size: 28px;"></ion-icon>
-                <ion-label>Estatísticas</ion-label>
-              </ion-item>
-            </ion-card>
-          </ion-col>
-        </ion-row>
-        
-      </ion-grid>
+  <!-- "O teu Menu" below the slideshow -->
+  <div class="menu-title">
+    O teu Menu
+  </div>
+
+  <!-- Menu rectangles -->
+  <div class="menu-rectangles">
+    <div class="menu-rectangle large">
+      <ion-icon name="book-outline"></ion-icon>
+      <span>Listas</span>
+    </div>
+    <div class="menu-rectangle-row">
+      <div class="menu-rectangle">
+        <ion-icon name="time-outline"></ion-icon>
+        <span>Histórico</span>
+      </div>
+      <div class="menu-rectangle">
+        <ion-icon name="stats-chart-outline"></ion-icon>
+        <span>Estatísticas</span>
+      </div>
     </div>
   </div>
 </ion-content>

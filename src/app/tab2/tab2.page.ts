@@ -13,7 +13,7 @@ import { UserService } from '../services/user.service';
 })
 export class Tab2Page implements AfterViewInit {
   map: google.maps.Map | undefined;
-  color = this.userService.getColor();
+
 
   constructor(private userService: UserService) {}
 

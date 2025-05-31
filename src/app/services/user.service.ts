@@ -1,28 +1,45 @@
 import { Injectable } from '@angular/core';
+import { Storage } from '@ionic/storage-angular';
+
+export interface User {
+  nome?: string;
+  email?: string;
+  telefone?: string;
+  password?: string;
+}
 
 @Injectable({ providedIn: 'root' })
 export class UserService {
-  user: { nome?: string; email?: string; telefone?: string } = {
-    nome: 'Nome do Utilizador',
-    email: 'email@exemplo.com',
-    telefone: '912345678'
-  };
+  private _storage: Storage | null = null;
+  private _ready: Promise<void>;
+  user: User = {};
 
-  color: string = '#fff'; // default white
+  constructor(private storage: Storage) {
+    this._ready = this.init();
+  }
 
-  setUser(user: { nome: string; email: string; telefone: string }) {
+  private async init() {
+    this._storage = await this.storage.create();
+    const storedUser = await this._storage.get('user');
+    if (storedUser) {
+      this.user = storedUser;
+    }
+  }
+
+  async setUser(user: User) {
+    await this._ready;
     this.user = user;
+    await this._storage?.set('user', user);
   }
 
-  getUser() {
+  async getUser(): Promise<User> {
+    await this._ready;
+    if (!this.user.nome) {
+      const storedUser = await this._storage?.get('user');
+      if (storedUser) {
+        this.user = storedUser;
+      }
+    }
     return this.user;
-  }
-
-  setColor(color: string) {
-    this.color = color;
-  }
-
-  getColor() {
-    return this.color;
   }
 }
