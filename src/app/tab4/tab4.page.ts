@@ -5,11 +5,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { UserService } from '../services/user.service';
 import { ProductService, Product } from '../services/product.service'; // <-- Import Product
-
-interface Lista {
-  nome: string;
-  products: Product[];
-}
+import { ListService, Lista } from '../services/list.service';
 
 @Component({
   selector: 'app-tab4',
@@ -21,16 +17,22 @@ interface Lista {
 export class Tab4Page {
   showCreateInput = false;
   nomeLista = '';
-  listas: Lista[] = []; // <-- Change made here
 
   // Product registration fields
   productNome = '';
   productQuantidade = 1;
+  productNomes: string[] = [];
+  productQuantidades: number[] = [];
 
   constructor(
     private userService: UserService,
-    private productService: ProductService // <-- Inject here
+    private productService: ProductService, // <-- Inject here
+    private listService: ListService,
   ) {}
+
+  get listas(): Lista[] {
+    return this.listService.listas;
+  }
 
   onAddLista() {
     this.showCreateInput = true;
@@ -39,7 +41,7 @@ export class Tab4Page {
 
   onSaveLista() {
     if (this.nomeLista.trim()) {
-      this.listas.push({
+      this.listService.listas.push({
         nome: this.nomeLista.trim(),
         products: []
       });
@@ -60,16 +62,13 @@ export class Tab4Page {
     }
   }
 
+  // When adding a product to a list:
   async addProductToList(productNome: string, productQuantidade: number, listIndex: number) {
     const product = {
       nome: productNome.trim(),
       quantidade: productQuantidade
     };
-
-    // Add to the selected list
-    this.listas[listIndex].products.push(product);
-
-    // Also add to histórico (ProductService)
-    await this.productService.addProduct(product);
+    this.listService.listas[listIndex].products.push(product);
+    // No need to call productService.addProduct if you want historico to be derived from lists
   }
 }

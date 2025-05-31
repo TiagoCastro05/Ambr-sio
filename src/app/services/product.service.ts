@@ -24,6 +24,7 @@ export class ProductService {
     const products = await this.getProducts();
     products.push(product);
     await this._storage?.set('products', products);
+    console.log('All products in storage:', products); // <--- Add this
   }
 
   async getProducts(): Promise<Product[]> {
