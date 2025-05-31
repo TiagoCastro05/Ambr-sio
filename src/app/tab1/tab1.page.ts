@@ -13,9 +13,7 @@ import { Router } from '@angular/router';
 })
 export class Tab1Page implements OnInit, OnDestroy {
   images: string[] = [
-    'assets/imagens/Cinemajpg.jpg',
-    'assets/imagens/vitinha.png',
-    'assets/your-image3.jpg'
+    
   ];
   currentImageIndex = 0;
   intervalId: any;
@@ -42,11 +40,12 @@ export class Tab1Page implements OnInit, OnDestroy {
     this.router.navigate(['/tabs/tab4']);
   }
 
-  goToHistorico() {
-    this.router.navigate(['/historico']);
-  }
+ goToHistorico(event: Event) {
+  (event.target as HTMLElement).blur();
+  this.router.navigate(['/historico']);
+}
 
-  goToEstatisticas() {
+   goToEstatisticas() {
     // Replace with your actual route for estatísticas
     this.router.navigate(['/estatisticas']);
   }

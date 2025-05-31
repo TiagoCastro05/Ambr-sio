@@ -45,13 +45,13 @@
 
     <!-- Manual Product Form -->
     <div *ngIf="showManualForm" style="background:#ede6fa; border-radius:16px; padding:24px; width:90%; max-width:350px; text-align:center;">
-      <div style="font-weight:500; font-size:1.1rem; margin-bottom:8px;">Adicionar Produto Manualmente</div>
-      <ion-input [(ngModel)]="loja" placeholder="Loja" style="margin-bottom:8px; background:#000; color:#fff; border-radius:8px; padding-left:12px;"></ion-input>
-      <ion-input [(ngModel)]="tipoProduto" placeholder="Tipo de produto" style="margin-bottom:8px; background:#000; color:#fff; border-radius:8px; padding-left:12px;"></ion-input>
-      <ion-input [(ngModel)]="produto" placeholder="Produto" style="margin-bottom:8px; background:#000; color:#fff; border-radius:8px; padding-left:12px;"></ion-input>
-      <ion-input [(ngModel)]="quantidade" placeholder="Quantidade" style="margin-bottom:8px; background:#000; color:#fff; border-radius:8px; padding-left:12px;"></ion-input>
-      <ion-input [(ngModel)]="validade" placeholder="Data de validade" style="margin-bottom:8px; background:#000; color:#fff; border-radius:8px; padding-left:12px;"></ion-input>
-      <ion-input [(ngModel)]="preco" placeholder="Preço" style="margin-bottom:8px; background:#000; color:#fff; border-radius:8px; padding-left:12px;"></ion-input>
+      <div style="font-weight:500; font-size:1.1rem; margin-bottom:8px; color: black;">Adicionar Produto Manualmente</div>
+      <ion-input [(ngModel)]="loja" placeholder="Loja" style="margin-bottom:8px; background:#ffffff; color:#000000; border-radius:8px; padding-left:12px;"></ion-input>
+      <ion-input [(ngModel)]="tipoProduto" placeholder="Tipo de produto" style="margin-bottom:8px; background:#ffffff; color:#000000; border-radius:8px; padding-left:12px;"></ion-input>
+      <ion-input [(ngModel)]="produto" placeholder="Produto" style="margin-bottom:8px; background:#ffffff; color:#000000; border-radius:8px; padding-left:12px;"></ion-input>
+      <ion-input [(ngModel)]="quantidade" placeholder="Quantidade" style="margin-bottom:8px; background:#ffffff; color:#000000; border-radius:8px; padding-left:12px;"></ion-input>
+      <ion-input [(ngModel)]="validade" placeholder="Data de validade" style="margin-bottom:8px; background:#ffffff; color:#000000; border-radius:8px; padding-left:12px;"></ion-input>
+      <ion-input [(ngModel)]="preco" placeholder="Preço" style="margin-bottom:8px; background:#ffffff; color:#000000; border-radius:8px; padding-left:12px;"></ion-input>
       <ion-button expand="block" (click)="onSaveManual()">Guardar Produto</ion-button>
       <ion-button fill="clear" color="medium" (click)="showManualForm = false" style="margin-top:12px;">Cancelar</ion-button>
     </div>
