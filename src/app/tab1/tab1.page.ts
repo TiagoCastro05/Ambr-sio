@@ -13,7 +13,9 @@ import { Router } from '@angular/router';
 })
 export class Tab1Page implements OnInit, OnDestroy {
   images: string[] = [
-    
+    'assets/imagens/doce.png',
+    'assets/imagens/folheto.png',
+    'assets/imagens/pingo.png'
   ];
   currentImageIndex = 0;
   intervalId: any;
