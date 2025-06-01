@@ -30,19 +30,19 @@
 
   <!-- Menu rectangles -->
   <div class="menu-rectangles">
-    <div class="menu-rectangle large">
+    <button class="menu-rectangle large" (click)="goToListas()">
       <ion-icon name="book-outline"></ion-icon>
       <span>Listas</span>
-    </div>
+    </button>
     <div class="menu-rectangle-row">
-      <div class="menu-rectangle">
+      <button class="menu-rectangle" (click)="goToHistorico($event)">
         <ion-icon name="time-outline"></ion-icon>
         <span>Histórico</span>
-      </div>
-      <div class="menu-rectangle">
+      </button>
+      <button class="menu-rectangle" (click)="goToEstatisticas()">
         <ion-icon name="stats-chart-outline"></ion-icon>
         <span>Estatísticas</span>
-      </div>
+      </button>
     </div>
   </div>
 </ion-content>

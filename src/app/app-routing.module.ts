@@ -15,6 +15,14 @@ const routes: Routes = [
     loadChildren: () => import('./tabs/tabs.module').then(m => m.TabsPageModule)
   },
   {
+    path: 'historico',
+    loadComponent: () => import('./historico/historico.page').then(m => m.HistoricoPage)
+  },
+  {
+    path: 'tab4',
+    loadComponent: () => import('./tab4/tab4.page').then(m => m.Tab4Page)
+  },
+  {
     path: '',
     redirectTo: 'login',
     pathMatch: 'full'

@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { IonicModule } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 
 
 @Component({
@@ -12,14 +13,14 @@ import { CommonModule } from '@angular/common';
 })
 export class Tab1Page implements OnInit, OnDestroy {
   images: string[] = [
-    'assets/imagens/Cinemajpg.jpg',
-    'assets/imagens/vitinha.png',
-    'assets/your-image3.jpg'
+    
   ];
   currentImageIndex = 0;
   intervalId: any;
 
   notificationsActive = false;
+
+  constructor(private router: Router) {}
 
   ngOnInit() {
     this.intervalId = setInterval(() => {
@@ -35,4 +36,17 @@ export class Tab1Page implements OnInit, OnDestroy {
     this.notificationsActive = !this.notificationsActive;
   }
 
+  goToListas() {
+    this.router.navigate(['/tabs/tab4']);
+  }
+
+ goToHistorico(event: Event) {
+  (event.target as HTMLElement).blur();
+  this.router.navigate(['/historico']);
+}
+
+   goToEstatisticas() {
+    // Replace with your actual route for estatísticas
+    this.router.navigate(['/estatisticas']);
+  }
 }

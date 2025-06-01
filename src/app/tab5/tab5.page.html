@@ -12,14 +12,14 @@
     <h2 style="margin: 0;">{{ user.nome || 'Nome de Utilizador' }}</h2>
     <p style="margin: 4px 0 24px 0; color: #888;">{{ user.nome || 'Username' }}</p>
 
-    <ion-list style="width: 100%; max-width: 350px; margin-top: 32px;">
-      <ion-item button>
+    <ion-list style="width: 100%; max-width: 350px; margin-top: 32px; background: #fff; border-radius: 8px;">
+      <ion-item button (click)="toggleColorOption()" style="background: #fff;">
         <ion-icon name="settings-outline" slot="start"></ion-icon>
         <ion-label>Definições</ion-label>
       </ion-item>
-      <ion-item>
-        <ion-label>Cor do App</ion-label>
-        <input type="color" [value]="color" (input)="changeColor($event)" style="width: 40px; height: 40px; border: none; background: none;" />
+      <ion-item *ngIf="showColorOption" style="background: #fff;">
+        <ion-label>Cor dos Botões</ion-label>
+        <input type="color" [value]="color" (input)="changeColor($event)" style="width: 40px; height: 40px; border: none; background: white;" />
       </ion-item>
     </ion-list>
   </div>

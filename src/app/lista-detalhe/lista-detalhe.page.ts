@@ -3,6 +3,8 @@ import { IonicModule } from '@ionic/angular';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
+import { HistoricoService } from '../services/historico.service';
+import { Storage } from '@ionic/storage-angular';
 
 interface Produto {
   loja: string;
@@ -35,8 +37,28 @@ export class ListaDetalhePage {
 
   produtos: Produto[] = [];
 
-  constructor(private route: ActivatedRoute, private router: Router) {
+  constructor(
+    private historicoService: HistoricoService,
+    private route: ActivatedRoute,
+    private router: Router,
+    private storage: Storage // <-- add this
+  ) {
     this.nomeLista = this.route.snapshot.paramMap.get('nome') || '';
+    this.initStorage();
+  }
+
+  async initStorage() {
+    await this.storage.create();
+    await this.loadProdutos();
+  }
+
+  async loadProdutos() {
+    const produtos = await this.storage.get(`produtos_${this.nomeLista}`);
+    this.produtos = produtos || [];
+  }
+
+  async saveProdutos() {
+    await this.storage.set(`produtos_${this.nomeLista}`, this.produtos);
   }
 
   onAdicionarProdutos() {
@@ -52,7 +74,7 @@ export class ListaDetalhePage {
     this.router.navigate(['/tabs/tab3']);
   }
 
-  onSaveManual() {
+  async onSaveManual() {
     if (
       this.loja.trim() &&
       this.tipoProduto.trim() &&
@@ -69,6 +91,15 @@ export class ListaDetalhePage {
         validade: this.validade,
         preco: this.preco,
       });
+
+      await this.saveProdutos(); // <-- persist to storage
+
+      // Add to historico with correct types
+      this.historicoService.adicionar({
+        nome: this.produto,
+        quantidade: Number(this.quantidade)
+      });
+
       this.showManualForm = false;
       // Reset fields
       this.loja = '';

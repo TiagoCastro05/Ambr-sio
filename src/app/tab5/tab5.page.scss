@@ -1,0 +1,16 @@
+ion-list, ion-item {
+  --background: #ffffff !important;
+  background: #ffffff !important;
+  color: #000 !important;
+}
+
+ion-item {
+  --ion-item-background: #ffffff !important;
+  background: #fff !important;
+  border-radius: 12px;
+  color: #000 !important;
+}
+
+ion-label, ion-icon {
+  color: #000 !important;
+}

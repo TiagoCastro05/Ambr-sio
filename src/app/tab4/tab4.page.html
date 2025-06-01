@@ -15,8 +15,8 @@
       <ion-button *ngFor="let lista of listas"
                   expand="block"
                   style="width:220px; margin-bottom:12px;"
-                  [routerLink]="['/tabs/lista', lista]">
-        {{ lista }}
+                  [routerLink]="['/tabs/lista', lista.nome]">
+        {{ lista.nome }}
       </ion-button>
     </div>
 
@@ -30,9 +30,18 @@
       <ion-input 
         [(ngModel)]="nomeLista" 
         placeholder="Nome da lista" 
-        style="margin-bottom:12px; background:#000; color:#fff; border-radius:8px; padding-left:12px;">
+        style="background: #fff; color: #000; border: 1px solid #000; border-radius: 8px; padding-left: 12px;">
       </ion-input>
       <ion-button expand="block" (click)="onSaveLista()">Guardar</ion-button>
+    </div>
+
+    <div *ngFor="let lista of listas; let i = index">
+      <h2>{{ lista.nome }}</h2>
+      <ul>
+        <li *ngFor="let product of lista.products">
+          {{ product.nome }} ({{ product.quantidade }})
+        </li>
+      </ul>
     </div>
   </div>
 </ion-content>
