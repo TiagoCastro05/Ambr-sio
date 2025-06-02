@@ -40,15 +40,19 @@ export class LoginPage {
         this.router.navigate(['/tabs/tab1']);
         this.showToast('Account created successfully!', 'success');
       } catch (error: any) {
-        this.showToast(error.message, 'danger');
+        if (error.code === 'auth/email-already-in-use') {
+          this.showToast('O email já está em uso.', 'danger');
+        } else {
+          this.showToast(error.message, 'danger');
+        }
       }
     } else {
       try {
         await this.afAuth.signInWithEmailAndPassword(email, password); // Use afAuth here
         this.router.navigate(['/tabs/tab1']);
-        this.showToast('Logged in successfully!', 'success');
+        this.showToast('Entrada com sucesso!', 'success');
       } catch (error: any) {
-        this.showToast('Login failed: ' + error.message, 'danger');
+        this.showToast('Falha de login: ' + error.message, 'danger');
       }
     }
   }

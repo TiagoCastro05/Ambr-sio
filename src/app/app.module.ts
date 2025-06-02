@@ -5,13 +5,13 @@ import { RouteReuseStrategy } from '@angular/router';
 
 import { AngularFireModule } from '@angular/fire/compat';
 import { AngularFireAuthModule } from '@angular/fire/compat/auth';
-import { IonicStorageModule } from '@ionic/storage-angular';
+import { environment } from '../environments/environment';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
-import { environment } from '../environments/environment';
 import { Injectable } from '@angular/core';
 import { Storage } from '@ionic/storage-angular';
+import { IonicStorageModule } from '@ionic/storage-angular';
 
 @NgModule({
   declarations: [AppComponent],
@@ -22,6 +22,7 @@ import { Storage } from '@ionic/storage-angular';
     AngularFireModule.initializeApp(environment.firebase), // Initialize Firebase
     AngularFireAuthModule, // Add Firebase Authentication module
     IonicStorageModule.forRoot(),
+    // other imports...
   ],
   providers: [{ provide: RouteReuseStrategy, useClass: IonicRouteStrategy }],
   bootstrap: [AppComponent],
