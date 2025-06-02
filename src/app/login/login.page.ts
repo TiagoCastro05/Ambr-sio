@@ -1,16 +1,16 @@
 import { Component } from '@angular/core';
-import { IonicModule, ToastController } from '@ionic/angular';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { UserService } from '../services/user.service';
+import { ToastController, IonicModule } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
+import { AngularFireAuth } from '@angular/fire/compat/auth';
 
 @Component({
   selector: 'app-login',
-  standalone: true,
-  imports: [IonicModule, FormsModule, ReactiveFormsModule, CommonModule],
   templateUrl: './login.page.html',
   styleUrls: ['./login.page.scss'],
+  standalone: true,
+  imports: [IonicModule, CommonModule, ReactiveFormsModule], // Add required modules here
 })
 export class LoginPage {
   authForm: FormGroup;
@@ -18,59 +18,51 @@ export class LoginPage {
 
   constructor(
     private fb: FormBuilder,
-    private userService: UserService,
+    private afAuth: AngularFireAuth, // Inject AngularFireAuth here
     private router: Router,
     private toastCtrl: ToastController
   ) {
     this.authForm = this.fb.group({
-      nome: ['', Validators.required],
-      email: [''],
-      telefone: [''],
-      password: ['', Validators.required]
+      email: ['', [Validators.required, Validators.email]],
+      password: ['', [Validators.required, Validators.minLength(6)]],
+      telefone: [''], // Optional field for signup
     });
-  }
-
-  toggleMode() {
-    this.isSignup = !this.isSignup;
   }
 
   async onSubmit() {
     if (this.authForm.invalid) return;
 
+    const { email, password } = this.authForm.value;
+
     if (this.isSignup) {
-      // Save user info on signup, including password
-      await this.userService.setUser({
-        nome: this.authForm.value.nome,
-        email: this.authForm.value.email,
-        telefone: this.authForm.value.telefone,
-        password: this.authForm.value.password
-      });
-      this.router.navigate(['/tabs/tab1']);
+      try {
+        await this.afAuth.createUserWithEmailAndPassword(email, password); // Use afAuth here
+        this.router.navigate(['/tabs/tab1']);
+        this.showToast('Account created successfully!', 'success');
+      } catch (error: any) {
+        this.showToast(error.message, 'danger');
+      }
     } else {
-      // On login, check if username exists in storage
-      const storedUser = await this.userService.getUser();
-      if (storedUser && storedUser.nome === this.authForm.value.nome) {
-        if (storedUser.password === this.authForm.value.password) {
-          // Username and password match
-          this.router.navigate(['/tabs/tab1']);
-        } else {
-          // Password is wrong
-          const toast = await this.toastCtrl.create({
-            message: 'Palavra-passe incorreta.',
-            duration: 3000,
-            color: 'danger'
-          });
-          toast.present();
-        }
-      } else {
-        // Username does not exist
-        const toast = await this.toastCtrl.create({
-          message: 'Utilizador não encontrado. Por favor, crie uma conta primeiro.',
-          duration: 3000,
-          color: 'danger'
-        });
-        toast.present();
+      try {
+        await this.afAuth.signInWithEmailAndPassword(email, password); // Use afAuth here
+        this.router.navigate(['/tabs/tab1']);
+        this.showToast('Logged in successfully!', 'success');
+      } catch (error: any) {
+        this.showToast('Login failed: ' + error.message, 'danger');
       }
     }
+  }
+
+  private async showToast(message: string, color: string) {
+    const toast = await this.toastCtrl.create({
+      message,
+      duration: 3000,
+      color,
+    });
+    toast.present();
+  }
+
+  toggleMode() {
+    this.isSignup = !this.isSignup;
   }
 }

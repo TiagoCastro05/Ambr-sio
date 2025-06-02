@@ -3,7 +3,8 @@ import { Camera, CameraResultType, CameraSource, PermissionStatus } from '@capac
 import { IonicModule } from '@ionic/angular';
 import { UserService } from '../services/user.service';
 import { ExploreContainerComponentModule } from '../explore-container/explore-container.module';
-import { CommonModule } from '@angular/common'; // <-- Add this import
+import { CommonModule } from '@angular/common';
+import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 
 @Component({
   selector: 'app-tab3',
@@ -14,6 +15,7 @@ import { CommonModule } from '@angular/common'; // <-- Add this import
 })
 export class Tab3Page {
   image: string | undefined;
+  barcode: string | undefined;
 
   constructor(private userService: UserService) {}
 
@@ -35,5 +37,18 @@ export class Tab3Page {
       source: CameraSource.Camera,
     });
     this.image = image.dataUrl;
+  }
+
+  async scanBarcode() {
+    try {
+      const result = await BarcodeScanner.scan();
+      if (result.barcodes && result.barcodes.length > 0) {
+        this.barcode = result.barcodes[0].rawValue;
+      } else {
+        this.barcode = 'No barcode found';
+      }
+    } catch (error) {
+      this.barcode = 'Error scanning barcode';
+    }
   }
 }

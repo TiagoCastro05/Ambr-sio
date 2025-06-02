@@ -13,8 +13,8 @@
   <form [formGroup]="authForm" (ngSubmit)="onSubmit()" style="max-width: 350px; margin: 40px auto;">
     <ion-list>
       <ion-item>
-        <ion-label position="floating">Nome de Utilizador</ion-label>
-        <ion-input formControlName="nome"></ion-input>
+        <ion-label position="floating">Email</ion-label>
+        <ion-input type="email" formControlName="email"></ion-input>
       </ion-item>
       <ion-item *ngIf="isSignup">
         <ion-label position="floating">Telefone</ion-label>
@@ -27,6 +27,9 @@
     </ion-list>
     <ion-button expand="block" type="submit" [disabled]="authForm.invalid" style="margin-top: 24px;">
       {{ isSignup ? 'Criar Conta' : 'Entrar' }}
+    </ion-button>
+    <ion-button expand="block" fill="outline" (click)="toggleMode()">
+      Switch to {{ isSignup ? 'Login' : 'Sign Up' }}
     </ion-button>
   </form>
 </ion-content>
