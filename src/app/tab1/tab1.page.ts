@@ -51,4 +51,8 @@ export class Tab1Page implements OnInit, OnDestroy {
     // Replace with your actual route for estatísticas
     this.router.navigate(['/estatisticas']);
   }
+
+  goToTab5() {
+    this.router.navigate(['/tabs/tab5']); // Navigate to tab5
+  }
 }

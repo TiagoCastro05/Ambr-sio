@@ -1,24 +1,26 @@
 .top-row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin: 24px 16px 8px 16px;
+  justify-content: space-between; /* Align items to the edges */
+  padding: 10px;
 }
+
 .top-icon {
-  font-size: 2.2rem;
+  font-size: 24px;
   color: #222;
 }
-.profile-icon {
-  font-size: 2.2rem;
-  color: #a084e8;
-}
+
 .searchbar {
   flex: 1;
-  --background: #fff;
-  --box-shadow: none;
-  min-width: 0;
-  max-width: 220px;
+  margin: 0 10px;
 }
+
+.profile-icon {
+  font-size: 28px;
+  color: #222;
+  cursor: pointer; /* Add pointer cursor for clickability */
+}
+
 .welcome-row {
   display: flex;
   align-items: center;
@@ -39,7 +41,7 @@
   width: 100%;
   max-width: 350px;
   height: 180px;
-  margin: 0 auto 16px auto;
+  margin: 20px auto; /* Add more spacing above and below */
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
