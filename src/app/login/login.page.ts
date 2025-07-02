@@ -1,6 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { ToastController, IonicModule } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
 import { AngularFireAuth } from '@angular/fire/compat/auth';
@@ -14,19 +14,23 @@ import { FirebaseService } from '../services/firebase.service';
   standalone: true,
   imports: [IonicModule, CommonModule, ReactiveFormsModule], // Módulos necessários para a página
 })
-export class LoginPage {
+export class LoginPage implements OnInit {
   // Formulário reativo para autenticação
   authForm: FormGroup;
 
   // Define se está em modo de registo (signup) ou login
   isSignup = false;
+  
+  // Indica se veio de um redirecionamento do signup
+  cameFromSignup = false;
 
   constructor(
     private fb: FormBuilder,                // Utilizado para criar o formulário
     private afAuth: AngularFireAuth,        // Serviço de autenticação do Firebase
     private router: Router,                 // Usado para navegar após login/signup
+    private route: ActivatedRoute,          // Para ler parâmetros de URL
     private toastCtrl: ToastController,     // Mostra mensagens (toasts) de feedback
-    private userService: AuthUserService,  // Serviço para gestão do utilizador
+    private userService: AuthUserService,   // Serviço para gestão do utilizador
     private firebaseService: FirebaseService // Serviço para operações Firebase
   ) {
     // Criação do formulário com validações básicas
@@ -35,6 +39,23 @@ export class LoginPage {
       password: ['', [Validators.required, Validators.minLength(6)]], // Campo obrigatório com mínimo de 6 caracteres
       nome: [''],                                                 // Campo obrigatório apenas para signup
       telefone: [''],                                             // Campo opcional (pode ser usado em registo)
+    });
+  }
+  
+  ngOnInit() {
+    // Verificar se foi redirecionado da página de signup com email
+    this.route.queryParams.subscribe(params => {
+      if (params['email']) {
+        console.log('LOGIN - Email recebido do signup:', params['email']);
+        // Preencher o email no formulário
+        this.authForm.patchValue({
+          email: params['email']
+        });
+        this.cameFromSignup = true;
+        
+        // Mostrar mensagem adicional sobre a conta criada
+        this.showToast('Conta criada com sucesso! Por favor faça login agora.', 'success', 'custom-toast ion-color-success');
+      }
     });
   }
 
@@ -99,13 +120,23 @@ export class LoginPage {
           // Faz logout para garantir que o utilizador tem que fazer login novamente
           await this.afAuth.signOut();
           
-          // Volta para o modo login e limpa o formulário
+          // Mostra mensagem de sucesso com toast customizado
+          await this.showToast('Conta criada com sucesso! Faça login para continuar.', 'success', 'custom-toast ion-color-success');
+          
+          // Preenche o email para facilitar o login
+          const savedEmail = email;
+          
+          // Volta para o modo login e limpa o formulário automaticamente
           this.isSignup = false;
           this.updateFormValidations();
           this.authForm.reset();
           
-          // Mostra mensagem de sucesso
-          this.showToast('Conta criada com sucesso! Faça login para continuar.', 'success');
+          // Preencher o email novamente para facilitar o login
+          setTimeout(() => {
+            this.authForm.patchValue({
+              email: savedEmail
+            });
+          }, 500);
         } catch (error: any) {
           console.error('LOGIN - ❌ Erro no signup:', error);
           // Erro específico se o email já estiver em uso
@@ -166,7 +197,7 @@ export class LoginPage {
           this.userService['userSubject'].next({...basicUser});
           
           // Mostrar toast de sucesso imediatamente
-          this.showToast('Entrada com sucesso!', 'success');
+          this.showToast('Entrada com sucesso!', 'success', 'custom-toast ion-color-success');
           
           // Navegar para a página inicial IMEDIATAMENTE
           console.log('LOGIN - 🚀 Navegando para /tabs/tab1 instantaneamente');
@@ -211,13 +242,22 @@ export class LoginPage {
   }
 
   // Método para mostrar uma mensagem de toast
-  private async showToast(message: string, color: string) {
+  private async showToast(message: string, color: string, cssClass: string = 'custom-toast') {
     const toast = await this.toastCtrl.create({
       message,
-      duration: 3000,
+      duration: 4000,
       color,
+      position: 'middle',
+      cssClass: cssClass,
+      buttons: [
+        {
+          text: 'OK',
+          role: 'cancel'
+        }
+      ]
     });
-    toast.present();
+    await toast.present();
+    return toast;
   }
 
   // Alterna entre modo login e registo

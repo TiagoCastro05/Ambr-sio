@@ -19,6 +19,15 @@
             "polyfills": "src/polyfills.ts",
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
+            "allowedCommonJsDependencies": [
+              "localforage",
+              "@firebase/app",
+              "firebase/app",
+              "@firebase/firestore",
+              "@firebase/auth",
+              "@firebase/component",
+              "@firebase/util"
+            ],
             "assets": [
               {
                 "glob": "**/*",

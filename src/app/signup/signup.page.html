@@ -1,6 +1,6 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
-    <ion-title>signup</ion-title>
+    <ion-title>Criar Conta</ion-title>
   </ion-toolbar>
 </ion-header>
 
@@ -25,8 +25,11 @@
       </ion-item>
     </ion-list>
     <div style="display:flex;justify-content:space-between;width:90%;max-width:350px;margin-top:16px;">
-      <ion-button fill="outline" color="secondary" expand="block" (click)="onBack()">Voltar</ion-button>
-      <ion-button expand="block" (click)="onSignup()">Avançar</ion-button>
+      <ion-button fill="outline" color="secondary" expand="block" (click)="onBack()">Voltar para Login</ion-button>
+      <ion-button expand="block" (click)="onSignup()" [disabled]="isLoading">
+        <ion-spinner name="dots" *ngIf="isLoading"></ion-spinner>
+        <span *ngIf="!isLoading">Criar Conta</span>
+      </ion-button>
     </div>
   </div>
 </ion-content>

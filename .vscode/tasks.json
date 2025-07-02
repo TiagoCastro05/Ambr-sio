@@ -1,0 +1,13 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run Ionic App",
+			"type": "shell",
+			"command": "ionic serve",
+			"group": "test",
+			"problemMatcher": [],
+			"isBackground": true
+		}
+	]
+}

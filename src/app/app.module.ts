@@ -37,7 +37,8 @@ import { BarcodeScanner } from '@awesome-cordova-plugins/barcode-scanner/ngx';
       useValue: { 
         cacheSizeBytes: 5242880, // 5MB
         ignoreUndefinedProperties: true,
-        merge: true                          // Allow field merging
+        merge: true,                         // Allow field merging
+        synchronizeTabs: true                // Melhor suporte para múltiplas tabs
       } 
     }
   ],
