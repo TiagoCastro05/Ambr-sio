@@ -101,14 +101,22 @@ export class LoginPage {
         const userCredential = await this.afAuth.signInWithEmailAndPassword(email, password);
         console.log('LOGIN - ✅ Utilizador autenticado:', userCredential.user?.uid, userCredential.user?.email);
         
-        // Aguardar um pouco para os serviços carregarem
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Forçar recarregamento do perfil do utilizador
+        // Forçar recarregamento do perfil imediatamente (sem espera)
         try {
-          console.log('LOGIN - 🔄 Forçando reload do perfil...');
-          const userData = await this.userService.getUser();
-          console.log('LOGIN - 📄 Dados do perfil após login:', userData);
+          console.log('LOGIN - 🔄 Forçando reload do perfil imediatamente...');
+          await this.userService.forceReloadProfile();
+          
+          // Se o usuário não tiver um nome no perfil, vamos criar um com base no email
+          const userData = this.userService.getCurrentUser();
+          console.log('LOGIN - � Dados do perfil carregados:', userData);
+          
+          if (userData && (!userData.nome || userData.nome.trim() === '')) {
+            const emailUsername = email.split('@')[0];
+            console.log('LOGIN - ✏️ Atualizando nome de usuário para:', emailUsername);
+            await this.userService.updateUser({
+              nome: emailUsername
+            });
+          }
         } catch (error) {
           console.log('LOGIN - ⚠️ Erro ao carregar perfil (não crítico):', error);
         }

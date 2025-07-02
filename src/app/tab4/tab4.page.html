@@ -10,19 +10,15 @@
 <ion-content class="ion-padding" style="--background: #fff; min-height: 100vh;">
   <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:40vh;">
 
-    <!-- Formulário para criar nova lista (aparece quando showCreateInput é true) -->
-    <div *ngIf="showCreateInput" style="width:100%;max-width:300px;margin-bottom:20px;border:1px solid #ddd;border-radius:8px;padding:16px;background:#f9f9f9;">
-      <ion-item style="--background:transparent;">
+    <!-- Input para criar nova lista (visível apenas quando showCreateInput=true) -->
+    <div *ngIf="showCreateInput" style="width:100%;max-width:300px;margin-bottom:24px;">
+      <ion-item>
         <ion-label position="floating">Nome da Lista</ion-label>
-        <ion-input [(ngModel)]="nomeLista"></ion-input>
+        <ion-input [(ngModel)]="nomeLista" placeholder="Digite o nome da lista"></ion-input>
       </ion-item>
-      <div style="display:flex;justify-content:flex-end;margin-top:16px;gap:8px;">
-        <ion-button fill="outline" size="small" color="medium" (click)="onCancelLista()">
-          Cancelar
-        </ion-button>
-        <ion-button size="small" (click)="onSaveLista()">
-          Salvar
-        </ion-button>
+      <div style="display:flex;justify-content:space-between;margin-top:12px;">
+        <ion-button color="medium" (click)="onAddLista()">Cancelar</ion-button>
+        <ion-button color="primary" (click)="criarNovaLista()">Salvar Lista</ion-button>
       </div>
     </div>
 
@@ -45,11 +41,13 @@
       </div>
     </div>
 
-    <!-- Adicionar Lista button -->
-    <ion-button *ngIf="!showCreateInput" fill="clear" (click)="onAddLista()" style="border:2px solid #222; border-radius:12px; width:220px; height:140px; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#fff;">
+    <!-- Adicionar Lista button (visível apenas quando showCreateInput=false) -->
+    <ion-button *ngIf="!showCreateInput" fill="clear" (click)="onAddLista()" 
+                style="border:2px solid #222; border-radius:12px; width:220px; height:140px; 
+                display:flex; flex-direction:column; align-items:center; justify-content:center; background:#fff;">
       <ion-icon name="add-outline" style="font-size:64px; color:#222;"></ion-icon>
       <div style="font-size:1.2rem; color:#222; margin-top:8px;">Adicionar Lista</div>
     </ion-button>
-
+  
   </div>
 </ion-content>

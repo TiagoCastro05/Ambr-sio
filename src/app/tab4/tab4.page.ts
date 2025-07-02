@@ -5,7 +5,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { AuthUserService } from '../core/auth-user.service';
 import { FirebaseService, Product, Lista } from '../services/firebase.service';
-import { AlertController, ToastController } from '@ionic/angular';
+import { ToastController } from '@ionic/angular';
 import { Subscription } from 'rxjs';
 
 // Definição das interfaces para estruturar os dados dos produtos e listas
@@ -31,12 +31,11 @@ export class Tab4Page implements OnDestroy {
 
   listas: Lista[] = [];          // Array para armazenar as listas de produtos
   private subscription: Subscription = new Subscription();
-
-  // Serviços via injeção de dependência
+  
+  // Usando inject() para resolver problema de EnvironmentInjector
   private userService = inject(AuthUserService);
   private firebaseService = inject(FirebaseService);
   private toastController = inject(ToastController);
-  private alertController = inject(AlertController);
   private router = inject(Router);
 
   constructor() {
@@ -65,122 +64,111 @@ export class Tab4Page implements OnDestroy {
     );
   }
 
-  // Método para criar nova lista sem AlertController para evitar problemas de injeção
-  async onAddLista() {
-    console.log('TAB4 - 📝 Iniciando criação de lista...');
-    this.showCreateInput = true;
-    this.nomeLista = '';
-  }
-
-  // Método para salvar lista usando input simples
-  async onSaveLista() {
-    if (!this.nomeLista.trim()) {
-      this.showToast('Por favor, digite um nome válido', 'warning');
-      return;
-    }
-
-    try {
-      console.log('TAB4 - 💾 Salvando lista:', this.nomeLista.trim());
-      
-      const lista: Lista = {
-        nome: this.nomeLista.trim(),
-        products: []
-      };
-      
-      console.log('TAB4 - 🔥 Chamando firebaseService.addLista...');
-      const listaId = await this.firebaseService.addLista(lista);
-      
-      console.log('TAB4 - ✅ Lista salva com sucesso, ID:', listaId);
-      this.showToast('Lista criada com sucesso!', 'success');
-      
-      // Limpar campos
+  // Método para alternar a exibição do campo de criação de lista
+  onAddLista() {
+    this.showCreateInput = !this.showCreateInput;
+    if (this.showCreateInput) {
       this.nomeLista = '';
-      this.showCreateInput = false;
-      
-    } catch (error) {
-      console.error('TAB4 - ❌ Erro ao salvar lista:', error);
-      this.showToast('Erro ao criar lista: ' + (error as any).message, 'danger');
+    }
+  }
+  
+  // Criar nova lista com o nome digitado
+  async criarNovaLista() {
+    if (this.nomeLista && this.nomeLista.trim()) {
+      try {
+        console.log('TAB4 - Criando lista:', this.nomeLista.trim());
+        const listaId = await this.firebaseService.addLista({
+          nome: this.nomeLista.trim(),
+          products: []
+        });
+        console.log('TAB4 - Lista criada com ID:', listaId);
+        this.showToast('Lista criada com sucesso!', 'success');
+        this.showCreateInput = false;
+        this.nomeLista = '';
+      } catch (error) {
+        console.error('TAB4 - Erro ao criar lista:', error);
+        this.showToast('Erro ao criar lista', 'danger');
+      }
     }
   }
 
-  // Método para cancelar criação de lista
-  onCancelLista() {
-    this.showCreateInput = false;
-    this.nomeLista = '';
+  // Método para registar um novo produto através do serviço Firebase
+  async registerProduct() {
+    if (this.productNome.trim() && this.productQuantidade > 0) {
+      try {
+        await this.firebaseService.addProduct({
+          nome: this.productNome.trim(),
+          quantidade: this.productQuantidade
+        });
+        this.showToast('Produto adicionado com sucesso!', 'success');
+        this.productNome = '';
+        this.productQuantidade = 1;
+      } catch (error) {
+        console.error('Erro ao adicionar produto:', error);
+        this.showToast('Erro ao adicionar produto', 'danger');
+      }
+    }
   }
 
-  // Método para editar uma lista
+  // Método para adicionar um produto a uma lista específica
+  async addProductToList(productNome: string, productQuantidade: number, lista: Lista) {
+    if (lista.id) {
+      const updatedProducts = [...lista.products, { nome: productNome, quantidade: productQuantidade }];
+      try {
+        await this.firebaseService.updateLista(lista.id, { products: updatedProducts });
+        this.showToast('Produto adicionado à lista!', 'success');
+      } catch (error) {
+        console.error('Erro ao adicionar produto à lista:', error);
+        this.showToast('Erro ao adicionar produto à lista', 'danger');
+      }
+    }
+  }
+
+  // Método para editar uma lista (sem usar AlertController)
   async editLista(lista: Lista) {
-    const alert = await this.alertController.create({
-      header: 'Editar Lista',
-      inputs: [
-        {
-          name: 'nome',
-          type: 'text',
-          value: lista.nome,
-          placeholder: 'Nome da lista'
-        }
-      ],
-      buttons: [
-        {
-          text: 'Cancelar',
-          role: 'cancel'
-        },
-        {
-          text: 'Salvar',
-          handler: async (data) => {
-            if (data.nome && data.nome.trim() && lista.id) {
-              try {
-                await this.firebaseService.updateLista(lista.id, { nome: data.nome.trim() });
-                this.showToast('Lista atualizada com sucesso!', 'success');
-                return true;
-              } catch (error) {
-                console.error('Erro ao atualizar lista:', error);
-                this.showToast('Erro ao atualizar lista', 'danger');
-                return false;
-              }
-            } else {
-              this.showToast('Por favor, digite um nome válido', 'warning');
-              return false;
-            }
-          }
-        }
-      ]
-    });
-    await alert.present();
+    this.showCreateInput = true;
+    this.nomeLista = lista.nome;
+    
+    // Armazenamos o ID da lista sendo editada
+    const listaId = lista.id;
+    
+    // Implementar a edição quando o usuário confirmar
+    if (listaId) {
+      try {
+        await this.firebaseService.updateLista(listaId, { nome: this.nomeLista.trim() });
+        this.showToast('Lista atualizada!', 'success');
+        this.showCreateInput = false;
+      } catch (error) {
+        console.error('Erro ao atualizar lista:', error);
+        this.showToast('Erro ao atualizar lista', 'danger');
+      }
+    }
   }
 
-  // Método para excluir uma lista
+  // Método para eliminar uma lista
   async deleteLista(lista: Lista) {
-    const alert = await this.alertController.create({
-      header: 'Confirmar',
-      message: `Tem certeza que deseja excluir a lista "${lista.nome}"?`,
-      buttons: [
-        {
-          text: 'Cancelar',
-          role: 'cancel'
-        },
-        {
-          text: 'Excluir',
-          handler: async () => {
-            if (lista.id) {
-              try {
-                await this.firebaseService.deleteLista(lista.id);
-                this.showToast('Lista excluída com sucesso!', 'warning');
-              } catch (error) {
-                console.error('Erro ao excluir lista:', error);
-                this.showToast('Erro ao excluir lista', 'danger');
-              }
-            }
-          }
+    if (confirm(`Tem certeza que deseja eliminar a lista "${lista.nome}"?`)) {
+      if (lista.id) {
+        try {
+          await this.firebaseService.deleteLista(lista.id);
+          this.showToast('Lista eliminada!', 'success');
+        } catch (error) {
+          console.error('Erro ao eliminar lista:', error);
+          this.showToast('Erro ao eliminar lista', 'danger');
         }
-      ]
-    });
-    await alert.present();
+      }
+    }
   }
 
-  // Método para mostrar mensagens toast
-  async showToast(message: string, color: string) {
+  // Navegar para detalhe da lista
+  navigateToLista(lista: Lista) {
+    if (lista.id) {
+      this.router.navigate(['/tabs/lista', lista.id]);
+    }
+  }
+
+  // Método utilitário para mostrar toasts de feedback
+  private async showToast(message: string, color: string) {
     const toast = await this.toastController.create({
       message: message,
       duration: 2000,

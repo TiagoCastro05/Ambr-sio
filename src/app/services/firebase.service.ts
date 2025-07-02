@@ -77,10 +77,11 @@ export class FirebaseService {
     console.log('FIREBASE - 📝 Adicionando lista para userId:', this.currentUserId);
     console.log('FIREBASE - 📋 Dados da lista recebidos:', lista);
     
-    // GARANTIR que o userId está definido
+    // GARANTIR que o userId está definido e products é um array
     const listaComUserId = {
       ...lista,
-      userId: this.currentUserId
+      userId: this.currentUserId,
+      products: Array.isArray(lista.products) ? lista.products : []
     };
     
     console.log('FIREBASE - 💾 Lista FINAL a ser salva:', listaComUserId);

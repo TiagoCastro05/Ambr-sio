@@ -26,14 +26,28 @@ export class AuthUserService {
   ) {
     console.log('AUTH SERVICE - 🚀 Construtor iniciado');
     
-    // Observa as mudanças de autenticação
+    // Observa as mudanças de autenticação - OTIMIZADO PARA CARREGAMENTO RÁPIDO
     this.afAuth.authState.subscribe(async (user) => {
       console.log('AUTH SERVICE - 🔐 AuthState changed:', user?.uid, user?.email);
       
       if (user) {
         this.currentUserId = user.uid;
         console.log('AUTH SERVICE - ✅ UserId definido:', this.currentUserId);
-        await this.loadUserProfile(user.uid);
+        
+        // Emitir um usuário básico imediatamente para que a UI possa mostrar algo
+        const basicUser = {
+          id: user.uid,
+          nome: user.displayName || user.email?.split('@')[0] || 'Usuário',
+          email: user.email || '',
+          telefone: ''
+        };
+        
+        this.user = basicUser;
+        this.userSubject.next(basicUser);
+        console.log('AUTH SERVICE - ⚡ Emitido usuário básico rápido:', basicUser);
+        
+        // Carrega dados completos do perfil em paralelo
+        this.loadUserProfile(user.uid);
       } else {
         console.log('AUTH SERVICE - 🚪 Utilizador deslogado');
         this.currentUserId = null;
@@ -80,24 +94,15 @@ export class AuthUserService {
         // Obter email do Firebase Auth
         const authUser = await this.afAuth.currentUser;
         const authEmail = authUser?.email || '';
-        const displayName = authUser?.displayName || '';
         
-        // Criar um perfil básico com o email
         this.user = {
           id: userId,
-          nome: displayName || authEmail.split('@')[0] || 'Usuário',
+          nome: '',
           email: authEmail,
           telefone: ''
         };
         
-        // Salvar imediatamente no Firestore para garantir que exista
-        await this.firestore.collection('users').doc(userId).set({
-          nome: this.user.nome,
-          email: this.user.email,
-          telefone: this.user.telefone
-        });
-        
-        console.log('AUTH SERVICE - 📝 User básico criado e salvo:', this.user);
+        console.log('AUTH SERVICE - 📝 User básico criado:', this.user);
       }
       
       // IMPORTANTE: Garantir que o userSubject sempre emite o utilizador
@@ -112,6 +117,24 @@ export class AuthUserService {
       
     } catch (error) {
       console.error('AUTH SERVICE - ❌ ERRO ao carregar perfil:', error);
+      
+      // Mesmo com erro, criar um user básico para não deixar null
+      try {
+        const authUser = await this.afAuth.currentUser;
+        const authEmail = authUser?.email || '';
+        
+        this.user = {
+          id: userId,
+          nome: '',
+          email: authEmail,
+          telefone: ''
+        };
+        
+        this.userSubject.next(this.user);
+        console.log('AUTH SERVICE - 🆘 User de fallback criado:', this.user);
+      } catch (fallbackError) {
+        console.error('AUTH SERVICE - ❌ Erro crítico no fallback:', fallbackError);
+      }
     }
   }
 
@@ -177,12 +200,52 @@ export class AuthUserService {
     return this.getCurrentUser();
   }
 
-  // Força o recarregamento do perfil do utilizador
+  // Força o recarregamento do perfil do utilizador - OTIMIZADO
   async forceReloadProfile(): Promise<void> {
     console.log('AUTH SERVICE - 🔄 FORÇANDO reload do perfil...');
     
     if (this.currentUserId) {
-      await this.loadUserProfile(this.currentUserId);
+      try {
+        const docRef = this.firestore.firestore.doc(`users/${this.currentUserId}`);
+        const doc = await docRef.get();
+        
+        if (doc.exists) {
+          const userData = doc.data() as UserProfile;
+          this.user = { 
+            ...userData, 
+            id: this.currentUserId 
+          };
+          
+          // Emitir imediatamente
+          this.userSubject.next(this.user);
+          console.log('AUTH SERVICE - ✅ Perfil atualizado e emitido:', this.user);
+          return;
+        } else {
+          // Criar perfil básico se não existir
+          const authUser = await this.afAuth.currentUser;
+          if (authUser) {
+            const basicProfile = {
+              id: this.currentUserId,
+              nome: authUser.displayName || authUser.email?.split('@')[0] || 'Usuário',
+              email: authUser.email || '',
+              telefone: ''
+            };
+            
+            // Salvar no Firestore e emitir
+            await docRef.set({
+              nome: basicProfile.nome,
+              email: basicProfile.email,
+              telefone: basicProfile.telefone
+            });
+            
+            this.user = basicProfile;
+            this.userSubject.next(this.user);
+            console.log('AUTH SERVICE - ✅ Perfil básico criado e emitido:', basicProfile);
+          }
+        }
+      } catch (error) {
+        console.error('AUTH SERVICE - ❌ Erro no forceReloadProfile:', error);
+      }
     } else {
       console.log('AUTH SERVICE - ⚠️ Nenhum utilizador autenticado para reload');
     }
