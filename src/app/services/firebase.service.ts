@@ -117,27 +117,34 @@ export class FirebaseService {
         
         console.log('FIREBASE - 📊 getListas - Buscando listas APENAS para userId:', user.uid);
         
-        // FILTRO RIGOROSO: Apenas listas com userId correspondente
-        return this.firestore.collection<Lista>('listas', ref => 
-          ref.where('userId', '==', user.uid)
-        ).snapshotChanges().pipe(
-          map(actions => {
-            const listasDoUser = actions.map(a => {
-              const data = a.payload.doc.data() as Lista;
-              const id = a.payload.doc.id;
-              return { id, ...data };
-            });
-            
-            console.log('FIREBASE - ✅ getListas - RESULTADO FINAL para', user.uid, ':', listasDoUser.length, 'listas');
-            console.log('FIREBASE - 📋 Listas encontradas:', listasDoUser);
-            
-            if (listasDoUser.length === 0) {
-              console.log('FIREBASE - ℹ️ Nenhuma lista encontrada para este utilizador. Isso é normal para contas novas.');
-            }
-            
-            return listasDoUser;
-          })
-        );
+        try {
+          // FILTRO RIGOROSO: Apenas listas com userId correspondente - OTIMIZADO
+          return this.firestore.collection<Lista>('listas', ref => 
+            ref.where('userId', '==', user.uid)
+          ).snapshotChanges().pipe(
+            map(actions => {
+              const listasDoUser = actions.map(a => {
+                const data = a.payload.doc.data() as Lista;
+                const id = a.payload.doc.id;
+                return { id, ...data };
+              });
+              
+              console.log('FIREBASE - ✅ getListas - RESULTADO FINAL para', user.uid, ':', listasDoUser.length, 'listas');
+              
+              if (listasDoUser.length === 0) {
+                console.log('FIREBASE - ℹ️ Nenhuma lista encontrada para este utilizador. Isso é normal para contas novas.');
+              } else {
+                console.log('FIREBASE - 📋 Listas encontradas (primeiras 3):', 
+                  listasDoUser.slice(0, 3).map(l => ({ id: l.id, nome: l.nome })));
+              }
+              
+              return listasDoUser;
+            })
+          );
+        } catch (error) {
+          console.error('FIREBASE - ❌ Erro ao buscar listas:', error);
+          return from([]);
+        }
       })
     );
   }

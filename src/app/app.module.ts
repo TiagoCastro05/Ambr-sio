@@ -5,7 +5,7 @@ import { RouteReuseStrategy } from '@angular/router';
 
 import { AngularFireModule } from '@angular/fire/compat';
 import { AngularFireAuthModule } from '@angular/fire/compat/auth';
-import { AngularFirestoreModule } from '@angular/fire/compat/firestore';
+import { AngularFirestoreModule, SETTINGS as FIRESTORE_SETTINGS } from '@angular/fire/compat/firestore';
 import { environment } from '../environments/environment';
 
 import { AppRoutingModule } from './app-routing.module';
@@ -24,12 +24,22 @@ import { BarcodeScanner } from '@awesome-cordova-plugins/barcode-scanner/ngx';
     AppRoutingModule,                         // Modulo que gere as rotas da aplicação
     AngularFireModule.initializeApp(environment.firebase), // Inicializa o Firebase com as credenciais do ambiente
     AngularFireAuthModule,                    // Módulo para autenticação Firebase
-    AngularFirestoreModule,                   // Módulo para Firestore Database
+    AngularFirestoreModule,  // Módulo para Firestore Database sem persistência para evitar problemas
     IonicStorageModule.forRoot(),             // Módulo para armazenamento local (persistente)
     // outros imports podem ser adicionados aqui...
   ],
   providers: [
-    { provide: RouteReuseStrategy, useClass: IonicRouteStrategy }, BarcodeScanner  // Estratégia para reutilizar rotas do Ionic
+    { provide: RouteReuseStrategy, useClass: IonicRouteStrategy }, 
+    BarcodeScanner,  // Estratégia para reutilizar rotas do Ionic
+    // Configurações otimizadas para Firestore
+    { 
+      provide: FIRESTORE_SETTINGS, 
+      useValue: { 
+        cacheSizeBytes: 5242880, // 5MB
+        ignoreUndefinedProperties: true,
+        merge: true                          // Allow field merging
+      } 
+    }
   ],
   bootstrap: [AppComponent],                  // Componente inicial da app
 })

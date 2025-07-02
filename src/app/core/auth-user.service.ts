@@ -19,6 +19,14 @@ export class AuthUserService {
   public user$ = this.userSubject.asObservable();
   private currentUserId: string | null = null;
   public user: UserProfile | null = null;
+  
+  // Método auxiliar para definir usuário instantâneo (usado para aceleração extrema do login)
+  setInstantUser(userData: UserProfile): void {
+    console.log('AUTH SERVICE - ⚡ Definindo usuário instantâneo:', userData);
+    this.user = userData;
+    this.currentUserId = userData.id || null;
+    this.userSubject.next({...userData});
+  }
 
   constructor(
     private firestore: AngularFirestore,
@@ -26,15 +34,15 @@ export class AuthUserService {
   ) {
     console.log('AUTH SERVICE - 🚀 Construtor iniciado');
     
-    // Observa as mudanças de autenticação - OTIMIZADO PARA CARREGAMENTO RÁPIDO
-    this.afAuth.authState.subscribe(async (user) => {
+    // Observa as mudanças de autenticação - SUPER OTIMIZADO PARA CARREGAMENTO INSTANTÂNEO
+    this.afAuth.authState.subscribe((user) => {
       console.log('AUTH SERVICE - 🔐 AuthState changed:', user?.uid, user?.email);
       
       if (user) {
         this.currentUserId = user.uid;
         console.log('AUTH SERVICE - ✅ UserId definido:', this.currentUserId);
         
-        // Emitir um usuário básico imediatamente para que a UI possa mostrar algo
+        // Emitir um usuário básico IMEDIATAMENTE para que a UI possa mostrar algo
         const basicUser = {
           id: user.uid,
           nome: user.displayName || user.email?.split('@')[0] || 'Usuário',
@@ -43,11 +51,16 @@ export class AuthUserService {
         };
         
         this.user = basicUser;
-        this.userSubject.next(basicUser);
-        console.log('AUTH SERVICE - ⚡ Emitido usuário básico rápido:', basicUser);
         
-        // Carrega dados completos do perfil em paralelo
-        this.loadUserProfile(user.uid);
+        // Emitir duas vezes em sequência para garantir que todos os componentes recebam
+        this.userSubject.next({...basicUser});
+        console.log('AUTH SERVICE - ⚡ Emitido usuário básico instantâneo:', basicUser);
+        
+        // Carrega dados completos do perfil em paralelo sem bloquear a UI
+        setTimeout(() => {
+          this.loadUserProfile(user.uid)
+            .catch(err => console.error('AUTH SERVICE - ❌ Erro ao carregar perfil:', err));
+        }, 0);
       } else {
         console.log('AUTH SERVICE - 🚪 Utilizador deslogado');
         this.currentUserId = null;
@@ -56,85 +69,140 @@ export class AuthUserService {
       }
     });
     
-    // Verificar se já há um utilizador autenticado
-    this.afAuth.currentUser.then(user => {
-      if (user && !this.currentUserId) {
-        console.log('AUTH SERVICE - 🔄 Utilizador já autenticado encontrado:', user.uid);
-        this.currentUserId = user.uid;
-        this.loadUserProfile(user.uid);
-      }
-    }).catch(error => {
-      console.log('AUTH SERVICE - ⚠️ Erro ao verificar utilizador atual:', error);
-    });
+    // Verificar se já há um utilizador autenticado (em background)
+    setTimeout(() => {
+      this.afAuth.currentUser.then(user => {
+        if (user && !this.currentUserId) {
+          console.log('AUTH SERVICE - 🔄 Utilizador já autenticado encontrado:', user.uid);
+          this.currentUserId = user.uid;
+          
+          // Emitir um usuário básico imediatamente
+          const basicUser = {
+            id: user.uid,
+            nome: user.displayName || user.email?.split('@')[0] || 'Usuário',
+            email: user.email || '',
+            telefone: ''
+          };
+          
+          this.user = basicUser;
+          this.userSubject.next({...basicUser});
+          
+          // Carregar perfil completo em background
+          this.loadUserProfile(user.uid)
+            .catch(err => console.error('AUTH SERVICE - ❌ Erro ao carregar perfil:', err));
+        }
+      }).catch(error => {
+        console.log('AUTH SERVICE - ⚠️ Erro ao verificar utilizador atual:', error);
+      });
+    }, 0);
   }
 
-  // Carrega o perfil do utilizador do Firestore
-  private async loadUserProfile(userId: string) {
+  // Carrega o perfil do utilizador do Firestore com ULTRA PERFORMANCE
+  private async loadUserProfile(userId: string): Promise<UserProfile> {
     try {
       console.log('AUTH SERVICE - 🔍 CARREGANDO perfil para userId:', userId);
       
-      const docRef = this.firestore.firestore.doc(`users/${userId}`);
-      const doc = await docRef.get();
+      // Implementar um timeout global para toda a operação
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout global')), 3000)
+      );
       
-      console.log('AUTH SERVICE - Documento existe no Firestore?', doc.exists);
+      // Criar a promise principal do carregamento
+      const loadPromise = new Promise<UserProfile>(async (resolve) => {
+        try {
+          const docRef = this.firestore.firestore.doc(`users/${userId}`);
+          
+          // Tentar obter o documento com timeout de 1.5s
+          let doc;
+          try {
+            doc = await Promise.race([
+              docRef.get(),
+              new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Firestore timeout')), 1500))
+            ]);
+          } catch (fetchErr) {
+            console.log('AUTH SERVICE - ⏱️ Timeout ao buscar do Firestore, usando dados básicos');
+            throw fetchErr; // Repropagar para usar o fallback
+          }
+          
+          if (doc && doc.exists) {
+            const userData = doc.data() as UserProfile;
+            console.log('AUTH SERVICE - 📄 DADOS DO FIRESTORE:', userData);
+            
+            const userProfile = { 
+              ...userData, 
+              id: userId
+            };
+            
+            this.user = userProfile;
+            this.userSubject.next({...userProfile});
+            console.log('AUTH SERVICE - ✅ USER FINAL carregado e emitido:', userProfile);
+            
+            resolve(userProfile);
+            return;
+          }
+          
+          throw new Error('Documento não existe');
+        } catch (error) {
+          // Fallback: criar um usuário básico
+          console.log('AUTH SERVICE - ⚠️ Usando fallback para criar user básico');
+          const authUser = await this.afAuth.currentUser;
+          
+          if (!authUser) {
+            throw new Error('Usuário Auth não disponível');
+          }
+          
+          const basicProfile = {
+            id: userId,
+            nome: authUser.displayName || authUser.email?.split('@')[0] || 'Usuário',
+            email: authUser.email || '',
+            telefone: ''
+          };
+          
+          // Salvar no Firestore sem bloquear
+          this.firestore.firestore.doc(`users/${userId}`).set({
+            nome: basicProfile.nome,
+            email: basicProfile.email,
+            telefone: basicProfile.telefone
+          }).catch(err => console.error('AUTH SERVICE - Erro ao salvar perfil básico:', err));
+          
+          this.user = basicProfile;
+          this.userSubject.next({...basicProfile});
+          console.log('AUTH SERVICE - 📝 User básico criado e emitido:', basicProfile);
+          
+          resolve(basicProfile);
+        }
+      });
       
-      if (doc.exists) {
-        const userData = doc.data() as UserProfile;
-        console.log('AUTH SERVICE - 📄 DADOS DO FIRESTORE:', userData);
-        
-        this.user = { 
-          ...userData, 
-          id: userId
-        };
-        
-        console.log('AUTH SERVICE - ✅ USER FINAL carregado:', this.user);
-      } else {
-        console.log('AUTH SERVICE - ⚠️ DOCUMENTO NÃO EXISTE, criando user básico');
-        
-        // Obter email do Firebase Auth
-        const authUser = await this.afAuth.currentUser;
-        const authEmail = authUser?.email || '';
-        
-        this.user = {
-          id: userId,
-          nome: '',
-          email: authEmail,
-          telefone: ''
-        };
-        
-        console.log('AUTH SERVICE - 📝 User básico criado:', this.user);
-      }
+      // Combinar o carregamento com o timeout global
+      const userProfile = await Promise.race([loadPromise, timeoutPromise]);
       
-      // IMPORTANTE: Garantir que o userSubject sempre emite o utilizador
-      this.userSubject.next(this.user);
-      console.log('AUTH SERVICE - 📡 User emitido via observable:', this.user);
-      
-      // Aguardar um pouco e forçar outra emissão para garantir que chegue aos componentes
+      // Emitir novamente após um curto intervalo para garantir que todos os componentes recebam
       setTimeout(() => {
-        console.log('AUTH SERVICE - 🔄 Re-emitindo user via observable (delayed):', this.user);
-        this.userSubject.next(this.user);
+        if (this.user) {
+          console.log('AUTH SERVICE - 🔄 Re-emitindo user via observable (delayed)');
+          this.userSubject.next({...this.user});
+        }
       }, 500);
       
+      return userProfile;
     } catch (error) {
-      console.error('AUTH SERVICE - ❌ ERRO ao carregar perfil:', error);
+      console.error('AUTH SERVICE - ❌ ERRO FINAL ao carregar perfil:', error);
       
-      // Mesmo com erro, criar um user básico para não deixar null
-      try {
-        const authUser = await this.afAuth.currentUser;
-        const authEmail = authUser?.email || '';
-        
-        this.user = {
-          id: userId,
-          nome: '',
-          email: authEmail,
-          telefone: ''
-        };
-        
-        this.userSubject.next(this.user);
-        console.log('AUTH SERVICE - 🆘 User de fallback criado:', this.user);
-      } catch (fallbackError) {
-        console.error('AUTH SERVICE - ❌ Erro crítico no fallback:', fallbackError);
+      // Último recurso: usar o que tiver ou criar mínimo
+      const fallbackProfile = this.user || {
+        id: userId,
+        nome: '',
+        email: '',
+        telefone: ''
+      };
+      
+      if (!this.user) {
+        this.user = fallbackProfile;
+        this.userSubject.next(fallbackProfile);
+        console.log('AUTH SERVICE - 🆘 Último recurso: perfil mínimo criado');
       }
+      
+      return fallbackProfile;
     }
   }
 
@@ -200,49 +268,85 @@ export class AuthUserService {
     return this.getCurrentUser();
   }
 
-  // Força o recarregamento do perfil do utilizador - OTIMIZADO
+  // Força o recarregamento do perfil do utilizador - VERSÃO ULTRA OTIMIZADA
   async forceReloadProfile(): Promise<void> {
     console.log('AUTH SERVICE - 🔄 FORÇANDO reload do perfil...');
     
     if (this.currentUserId) {
       try {
-        const docRef = this.firestore.firestore.doc(`users/${this.currentUserId}`);
-        const doc = await docRef.get();
+        // Primeiro, emite um perfil básico IMEDIATAMENTE com base nas informações do Auth
+        // ou nas informações já em cache
+        let instantProfile: UserProfile;
         
-        if (doc.exists) {
-          const userData = doc.data() as UserProfile;
-          this.user = { 
-            ...userData, 
-            id: this.currentUserId 
-          };
-          
-          // Emitir imediatamente
-          this.userSubject.next(this.user);
-          console.log('AUTH SERVICE - ✅ Perfil atualizado e emitido:', this.user);
-          return;
+        if (this.user) {
+          // Se já temos dados no cache, usar imediatamente
+          instantProfile = {...this.user};
+          console.log('AUTH SERVICE - ⚡ Usando perfil em cache para emissão instantânea');
         } else {
-          // Criar perfil básico se não existir
+          // Se não tem cache, tentar obter do Auth
           const authUser = await this.afAuth.currentUser;
-          if (authUser) {
-            const basicProfile = {
-              id: this.currentUserId,
-              nome: authUser.displayName || authUser.email?.split('@')[0] || 'Usuário',
-              email: authUser.email || '',
-              telefone: ''
-            };
-            
-            // Salvar no Firestore e emitir
-            await docRef.set({
-              nome: basicProfile.nome,
-              email: basicProfile.email,
-              telefone: basicProfile.telefone
-            });
-            
-            this.user = basicProfile;
-            this.userSubject.next(this.user);
-            console.log('AUTH SERVICE - ✅ Perfil básico criado e emitido:', basicProfile);
-          }
+          instantProfile = {
+            id: this.currentUserId,
+            nome: authUser?.displayName || authUser?.email?.split('@')[0] || 'Usuário',
+            email: authUser?.email || '',
+            telefone: ''
+          };
+          console.log('AUTH SERVICE - ⚡ Criando perfil básico para emissão instantânea');
         }
+        
+        // Atualizar o perfil no cache e emitir imediatamente
+        this.user = instantProfile;
+        this.userSubject.next({...instantProfile});
+        console.log('AUTH SERVICE - ⚡ Perfil instantâneo emitido:', instantProfile);
+        
+        // Em background, inicia a busca no Firestore com tempo limite menor
+        setTimeout(async () => {
+          try {
+            const docRef = this.firestore.firestore.doc(`users/${this.currentUserId}`);
+            
+            // Tentando obter perfil com um limite de tempo mais curto (800ms)
+            const doc: any = await Promise.race([
+              docRef.get(),
+              new Promise<never>((_, reject) => 
+                setTimeout(() => reject(new Error('Timeout')), 800)
+              )
+            ]);
+            
+            if (doc && doc.exists) {
+              const firestoreData = doc.data() as UserProfile;
+              console.log('AUTH SERVICE - 📄 Perfil obtido do Firestore:', firestoreData);
+              
+              // Atualizar o perfil e emitir
+              this.user = { 
+                ...firestoreData, 
+                id: this.currentUserId || undefined 
+              };
+              
+              this.userSubject.next({...this.user});
+              console.log('AUTH SERVICE - ✅ Perfil completo do Firestore emitido');
+            } else {
+              console.log('AUTH SERVICE - ⚠️ Documento não existe no Firestore');
+              
+              // Se o documento não existe, criar um com o perfil básico
+              const authUser = await this.afAuth.currentUser;
+              if (authUser) {
+                const basicProfile = {
+                  nome: authUser.displayName || authUser.email?.split('@')[0] || 'Usuário',
+                  email: authUser.email || '',
+                  telefone: ''
+                };
+                
+                docRef.set(basicProfile)
+                  .then(() => console.log('AUTH SERVICE - ✓ Perfil básico criado no Firestore'))
+                  .catch((err: Error) => console.error('AUTH SERVICE - Erro ao salvar perfil:', err));
+              }
+            }
+          } catch (err) {
+            console.log('AUTH SERVICE - ⏱️ Timeout ao buscar perfil do Firestore, usando perfil básico', err);
+          }
+        }, 100);
+        
+        return;
       } catch (error) {
         console.error('AUTH SERVICE - ❌ Erro no forceReloadProfile:', error);
       }
