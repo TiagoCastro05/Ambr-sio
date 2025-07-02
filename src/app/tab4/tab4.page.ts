@@ -1,104 +1,192 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy, inject } from '@angular/core';
 import { IonicModule } from '@ionic/angular';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
-import { UserService } from '../services/user.service';
-import { ProductService, Product } from '../services/product.service';
-import { ListService } from '../services/list.service';
-import { Storage } from '@ionic/storage-angular';
+import { RouterModule, Router } from '@angular/router';
+import { AuthUserService } from '../core/auth-user.service';
+import { FirebaseService, Product, Lista } from '../services/firebase.service';
+import { AlertController, ToastController } from '@ionic/angular';
+import { Subscription } from 'rxjs';
 
-// Add your interfaces here
+// Definição das interfaces para estruturar os dados dos produtos e listas
 interface Produto {
-  nome: string;
-  quantidade: number;
-}
-
-interface Lista {
-  nome: string;
-  products: Produto[];
+  nome: string;          // Nome do produto
+  quantidade: number;    // Quantidade do produto
 }
 
 @Component({
-  selector: 'app-tab4',
-  standalone: true,
-  imports: [IonicModule, FormsModule, CommonModule, RouterModule],
-  templateUrl: './tab4.page.html',
-  styleUrls: ['./tab4.page.scss'],
+  selector: 'app-tab4',            // Nome do seletor do componente
+  standalone: true,                // Componente independente (sem módulo associado)
+  imports: [IonicModule, FormsModule, CommonModule, RouterModule], // Importação de módulos necessários
+  templateUrl: './tab4.page.html',  // Ficheiro HTML associado
+  styleUrls: ['./tab4.page.scss'],  // Ficheiro de estilos CSS associado
 })
-export class Tab4Page {
-  showCreateInput = false;
-  nomeLista = '';
+export class Tab4Page implements OnDestroy {
+  showCreateInput = false;     // Controlo para mostrar/esconder o campo de criação de nova lista
+  nomeLista = '';              // Nome da nova lista a criar
 
-  // Product registration fields
+  // Campos para registo de novo produto
   productNome = '';
   productQuantidade = 1;
-  productNomes: string[] = [];
-  productQuantidades: number[] = [];
 
-  listas: Lista[] = [];
+  listas: Lista[] = [];          // Array para armazenar as listas de produtos
+  private subscription: Subscription = new Subscription();
 
-  constructor(
-    private userService: UserService,
-    private productService: ProductService, // <-- Inject here
-    private listService: ListService,
-    private storage: Storage // <-- Add this
-  ) {
-    this.initStorage();
+  // Serviços via injeção de dependência
+  private userService = inject(AuthUserService);
+  private firebaseService = inject(FirebaseService);
+  private toastController = inject(ToastController);
+  private alertController = inject(AlertController);
+  private router = inject(Router);
+
+  constructor() {
+    this.loadListas();    // Carrega as listas ao criar o componente
   }
 
-  async initStorage() {
-    await this.storage.create();
-    await this.loadListas();
+  ngOnDestroy() {
+    this.subscription.unsubscribe();
   }
 
-  async loadListas() {
-    const listas = await this.storage.get('listas');
-    this.listas = listas || [];
-    this.listService.listas = this.listas; // Keep service in sync if needed
+  // Carrega as listas do Firebase com logs detalhados
+  loadListas() {
+    console.log('TAB4 - 🔍 Carregando listas...');
+    
+    this.subscription.add(
+      this.firebaseService.getListas().subscribe(
+        listas => {
+          console.log('TAB4 - ✅ Listas carregadas:', listas.length, listas);
+          this.listas = listas;
+        },
+        error => {
+          console.error('TAB4 - ❌ Erro ao carregar listas:', error);
+          this.showToast('Erro ao carregar listas', 'danger');
+        }
+      )
+    );
   }
 
-  async saveListas() {
-    await this.storage.set('listas', this.listas);
-  }
-
-
-  onAddLista() {
+  // Método para criar nova lista sem AlertController para evitar problemas de injeção
+  async onAddLista() {
+    console.log('TAB4 - 📝 Iniciando criação de lista...');
     this.showCreateInput = true;
     this.nomeLista = '';
   }
 
+  // Método para salvar lista usando input simples
   async onSaveLista() {
-    if (this.nomeLista.trim()) {
-      this.listas.push({
+    if (!this.nomeLista.trim()) {
+      this.showToast('Por favor, digite um nome válido', 'warning');
+      return;
+    }
+
+    try {
+      console.log('TAB4 - 💾 Salvando lista:', this.nomeLista.trim());
+      
+      const lista: Lista = {
         nome: this.nomeLista.trim(),
         products: []
-      });
-      await this.saveListas(); // Save to storage
-      this.showCreateInput = false;
+      };
+      
+      console.log('TAB4 - 🔥 Chamando firebaseService.addLista...');
+      const listaId = await this.firebaseService.addLista(lista);
+      
+      console.log('TAB4 - ✅ Lista salva com sucesso, ID:', listaId);
+      this.showToast('Lista criada com sucesso!', 'success');
+      
+      // Limpar campos
       this.nomeLista = '';
+      this.showCreateInput = false;
+      
+    } catch (error) {
+      console.error('TAB4 - ❌ Erro ao salvar lista:', error);
+      this.showToast('Erro ao criar lista: ' + (error as any).message, 'danger');
     }
   }
 
-  async registerProduct() {
-    if (this.productNome.trim() && this.productQuantidade > 0) {
-      await this.productService.addProduct({
-        nome: this.productNome.trim(),
-        quantidade: this.productQuantidade
-      });
-      this.productNome = '';
-      this.productQuantidade = 1;
-      // Optionally show a success message
-    }
+  // Método para cancelar criação de lista
+  onCancelLista() {
+    this.showCreateInput = false;
+    this.nomeLista = '';
   }
 
-  // When adding a product to a list:
-  async addProductToList(productNome: string, productQuantidade: number, listIndex: number) {
-    const product = {
-      nome: productNome.trim(),
-      quantidade: productQuantidade
-    };
-    this.listas[listIndex].products.push(product);
-    await this.saveListas(); // Save updated listas to storage
+  // Método para editar uma lista
+  async editLista(lista: Lista) {
+    const alert = await this.alertController.create({
+      header: 'Editar Lista',
+      inputs: [
+        {
+          name: 'nome',
+          type: 'text',
+          value: lista.nome,
+          placeholder: 'Nome da lista'
+        }
+      ],
+      buttons: [
+        {
+          text: 'Cancelar',
+          role: 'cancel'
+        },
+        {
+          text: 'Salvar',
+          handler: async (data) => {
+            if (data.nome && data.nome.trim() && lista.id) {
+              try {
+                await this.firebaseService.updateLista(lista.id, { nome: data.nome.trim() });
+                this.showToast('Lista atualizada com sucesso!', 'success');
+                return true;
+              } catch (error) {
+                console.error('Erro ao atualizar lista:', error);
+                this.showToast('Erro ao atualizar lista', 'danger');
+                return false;
+              }
+            } else {
+              this.showToast('Por favor, digite um nome válido', 'warning');
+              return false;
+            }
+          }
+        }
+      ]
+    });
+    await alert.present();
+  }
+
+  // Método para excluir uma lista
+  async deleteLista(lista: Lista) {
+    const alert = await this.alertController.create({
+      header: 'Confirmar',
+      message: `Tem certeza que deseja excluir a lista "${lista.nome}"?`,
+      buttons: [
+        {
+          text: 'Cancelar',
+          role: 'cancel'
+        },
+        {
+          text: 'Excluir',
+          handler: async () => {
+            if (lista.id) {
+              try {
+                await this.firebaseService.deleteLista(lista.id);
+                this.showToast('Lista excluída com sucesso!', 'warning');
+              } catch (error) {
+                console.error('Erro ao excluir lista:', error);
+                this.showToast('Erro ao excluir lista', 'danger');
+              }
+            }
+          }
+        }
+      ]
+    });
+    await alert.present();
+  }
+
+  // Método para mostrar mensagens toast
+  async showToast(message: string, color: string) {
+    const toast = await this.toastController.create({
+      message: message,
+      duration: 2000,
+      color: color,
+      position: 'bottom'
+    });
+    toast.present();
   }
 }

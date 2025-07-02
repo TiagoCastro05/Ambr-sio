@@ -1,0 +1,143 @@
+// Página de login/signup
+ion-content {
+  --background: #f8fafc;
+}
+
+.login-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+// Logo
+.logo-container {
+  margin-bottom: 32px;
+  
+  .logo {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+  }
+}
+
+// Título
+.title-container {
+  margin-bottom: 32px;
+  text-align: center;
+  
+  .main-title {
+    font-size: 28px;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0;
+  }
+}
+
+// Formulário
+.auth-form {
+  width: 100%;
+  
+  .input-wrapper {
+    margin-bottom: 16px;
+    
+    .custom-input {
+      --padding-start: 16px;
+      --padding-end: 16px;
+      --padding-top: 12px;
+      --padding-bottom: 12px;
+      --border-radius: 12px;
+      --border-color: #e5e7eb;
+      --color: #374151;
+      --placeholder-color: #9ca3af;
+      
+      font-size: 16px;
+      
+      &.ion-focused {
+        --border-color: #3b82f6;
+      }
+    }
+  }
+  
+  // Botão principal
+  .primary-button {
+    --background: #3b82f6;
+    --background-hover: #2563eb;
+    --background-activated: #1d4ed8;
+    --border-radius: 12px;
+    --color: white;
+    
+    margin: 24px 0 20px 0;
+    height: 48px;
+    font-weight: 600;
+    font-size: 16px;
+    text-transform: none;
+    
+    &:disabled {
+      --background: #d1d5db;
+      --color: #9ca3af;
+    }
+  }
+  
+  // Divisor "ou"
+  .divider {
+    text-align: center;
+    margin: 20px 0;
+    position: relative;
+    
+    &::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: #e5e7eb;
+      z-index: 1;
+    }
+    
+    span {
+      background: #f8fafc;
+      padding: 0 16px;
+      color: #6b7280;
+      font-size: 14px;
+      position: relative;
+      z-index: 2;
+    }
+  }
+  
+  // Botão secundário
+  .secondary-button {
+    --border-color: #d1d5db;
+    --border-radius: 12px;
+    --color: #374151;
+    --background: transparent;
+    --background-hover: #f9fafb;
+    --background-activated: #f3f4f6;
+    
+    height: 48px;
+    font-weight: 500;
+    font-size: 16px;
+    text-transform: none;
+  }
+}
+
+// Responsividade
+@media (max-width: 480px) {
+  .login-container {
+    padding: 20px;
+  }
+  
+  .logo-container .logo {
+    width: 64px;
+    height: 64px;
+  }
+  
+  .title-container .main-title {
+    font-size: 24px;
+  }
+}

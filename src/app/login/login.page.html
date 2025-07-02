@@ -1,32 +1,85 @@
-<ion-header>
-  <ion-toolbar>
-    <ion-title>{{ isSignup ? 'Sign Up' : 'Login' }}</ion-title>
-    <ion-buttons slot="end">
-      <ion-button fill="clear" (click)="toggleMode()">
-        {{ isSignup ? 'Já tenho conta' : 'Criar conta' }}
-      </ion-button>
-    </ion-buttons>
-  </ion-toolbar>
-</ion-header>
+<ion-content class="login-content">
+  <div class="login-container">
+    
+    <!-- Logo Ambrosio -->
+    <div class="logo-container">
+      <img src="assets/imagens/Ambrosio.png" alt="Ambrosio Logo" class="logo">
+    </div>
+    
+    <!-- Título da tela -->
+    <div class="title-container">
+      <h1 class="main-title">{{ isSignup ? 'Sign Up' : 'Login' }}</h1>
+    </div>
+    
+    <!-- Formulário reativo para autenticação -->
+    <form [formGroup]="authForm" (ngSubmit)="onSubmit()" class="auth-form">
+      
+      <!-- Campo de email (sempre visível) -->
+      <div class="input-wrapper">
+        <ion-input 
+          type="email" 
+          formControlName="email" 
+          placeholder="Email"
+          fill="outline"
+          class="custom-input">
+        </ion-input>
+      </div>
 
-<ion-content class="ion-padding" style="--background: #fff;">
-  <form [formGroup]="authForm" (ngSubmit)="onSubmit()" style="max-width: 350px; margin: 40px auto;">
-    <ion-list>
-      <ion-item>
-        <ion-label position="floating">Nome de Utilizador</ion-label>
-        <ion-input formControlName="nome"></ion-input>
-      </ion-item>
-      <ion-item *ngIf="isSignup">
-        <ion-label position="floating">Telefone</ion-label>
-        <ion-input formControlName="telefone"></ion-input>
-      </ion-item>
-      <ion-item>
-        <ion-label position="floating">Password</ion-label>
-        <ion-input formControlName="password" type="password"></ion-input>
-      </ion-item>
-    </ion-list>
-    <ion-button expand="block" type="submit" [disabled]="authForm.invalid" style="margin-top: 24px;">
-      {{ isSignup ? 'Criar Conta' : 'Entrar' }}
-    </ion-button>
-  </form>
+      <!-- Campo de nome (apenas visível em modo de registo) -->
+      <div class="input-wrapper" *ngIf="isSignup">
+        <ion-input 
+          type="text" 
+          formControlName="nome" 
+          placeholder="Nome"
+          fill="outline"
+          class="custom-input">
+        </ion-input>
+      </div>
+
+      <!-- Campo de telefone (apenas visível em modo de registo) -->
+      <div class="input-wrapper" *ngIf="isSignup">
+        <ion-input 
+          formControlName="telefone" 
+          placeholder="Telefone"
+          fill="outline"
+          class="custom-input">
+        </ion-input>
+      </div>
+
+      <!-- Campo de password (obrigatório) -->
+      <div class="input-wrapper">
+        <ion-input 
+          formControlName="password" 
+          type="password" 
+          placeholder="Password"
+          fill="outline"
+          class="custom-input">
+        </ion-input>
+      </div>
+
+      <!-- Botão para submeter o formulário -->
+      <ion-button 
+        expand="block" 
+        type="submit" 
+        [disabled]="authForm.invalid" 
+        class="primary-button">
+        {{ isSignup ? 'Sign Up' : 'Login' }}
+      </ion-button>
+
+      <!-- Separador "ou" -->
+      <div class="divider">
+        <span>ou</span>
+      </div>
+
+      <!-- Botão para alternar entre login e registo -->
+      <ion-button 
+        expand="block" 
+        fill="outline" 
+        (click)="toggleMode()"
+        class="secondary-button">
+        {{ isSignup ? 'Login' : 'Sign Up' }}
+      </ion-button>
+    </form>
+    
+  </div>
 </ion-content>

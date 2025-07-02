@@ -1,2 +1,10 @@
 // For information on how to create your own theme, please see:
 // http://ionicframework.com/docs/theming/
+
+:root {
+  --ion-color-primary: #4CAF50;
+  --ion-color-secondary: #222;
+  --ion-color-light: #f4f4f4;
+  --ion-color-dark: #000;
+  --ion-color-ambrosio: #43a047; // Custom Ambrosio green
+}

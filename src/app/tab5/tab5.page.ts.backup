@@ -1,0 +1,126 @@
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { IonicModule } from '@ionic/angular';
+import { FormsModule } from '@angular/forms';
+import { AuthUserService, UserProfile } from '../core/auth-user.service';
+import { Router } from '@angular/router';
+import { AngularFireAuth } from '@angular/fire/compat/auth';
+import { AngularFirestore } from '@angular/fire/compat/firestore';
+import { Subscription } from 'rxjs';
+
+@Component({
+  selector: 'app-tab5',                      // Seletor do componente
+  templateUrl: './tab5.page.html',           // Ficheiro HTML associado
+  styleUrls: ['./tab5.page.scss'],            // Ficheiro de estilos CSS
+  standalone: true,                           // Componente independente
+  imports: [CommonModule, IonicModule, FormsModule],  // Módulos importados para o componente
+})
+export class Tab5Page implements OnInit, OnDestroy {
+  // Objeto que guarda informação do utilizador: nome, email e telefone (opcionais)
+  user: { nome?: string; email?: string; telefone?: string } = {};
+
+  color = '#fff';             // Cor atual usada no tema (inicial branco)
+  showColorOption = false;    // Controla a visibilidade da opção para alterar cor
+  private userSubscription?: Subscription; // Subscrição para os dados do utilizador
+
+  constructor(
+    private userService: AuthUserService,   // Serviço para obter dados do utilizador
+    private afAuth: AngularFireAuth,        // Serviço para autenticação Firebase
+    private firestore: AngularFirestore,    // Firestore direto para testes
+    private router: Router                   // Serviço para navegação entre páginas
+  ) {}
+
+  // Método do ciclo de vida do componente que é chamado após a inicialização
+  async ngOnInit() {
+    console.log('TAB5 - 🚀 ngOnInit iniciado');
+    
+    // TESTE DIRETO: Verificar o estado atual do AuthUserService
+    const currentUser = this.userService.getCurrentUser();
+    console.log('TAB5 - 🔍 TESTE DIRETO getCurrentUser():', currentUser);
+    
+    const currentUserId = this.userService.getCurrentUserId();
+    console.log('TAB5 - 🔍 TESTE DIRETO getCurrentUserId():', currentUserId);
+    
+    // Subscrever ao estado de autenticação diretamente
+    this.afAuth.authState.subscribe(async (authUser) => {
+      console.log('TAB5 - 🔐 Auth state mudou:', authUser?.uid, authUser?.email);
+      
+      if (authUser) {
+        console.log('TAB5 - 👤 Utilizador autenticado, carregando perfil...');
+        
+        // TESTE DIRETO DO FIRESTORE
+        try {
+          const docRef = await this.userService.firestore.firestore.doc(`users/${authUser.uid}`).get();
+          console.log('TAB5 - � TESTE DIRETO FIRESTORE existe?', docRef.exists);
+          console.log('TAB5 - 🔍 TESTE DIRETO FIRESTORE dados:', docRef.data());
+          
+          if (docRef.exists) {
+            const userData = docRef.data() as any;
+            this.user = {
+              nome: userData.nome || '',
+              email: userData.email || authUser.email || '',
+              telefone: userData.telefone || ''
+            };
+            console.log('TAB5 - ✅ DADOS DIRETOS DO FIRESTORE:', this.user);
+          } else {
+            console.log('TAB5 - ⚠️ DOCUMENTO NÃO EXISTE NO FIRESTORE');
+            this.user = {
+              nome: '',
+              email: authUser.email || '',
+              telefone: ''
+            };
+          }
+        } catch (error) {
+          console.error('TAB5 - ❌ Erro ao testar Firestore diretamente:', error);
+        }
+        
+        // Tentar carregar do userService também
+        const doc = this.userService.getCurrentUser();
+        console.log('TAB5 - 📄 Dados do userService.getCurrentUser():', doc);
+        
+      } else {
+        console.log('TAB5 - 🚪 Utilizador não autenticado');
+        this.user = {};
+      }
+    });
+    
+    // BACKUP: Subscrever ao observable do utilizador
+    this.userSubscription = this.userService.user$.subscribe((userData: UserProfile | null) => {
+      console.log('TAB5 - 📡 Dados recebidos do user$ observable:', userData);
+      if (userData && userData.nome) {
+        this.user = userData;
+        console.log('TAB5 - ✅ User atualizado via observable:', this.user);
+      }
+    });
+  }
+
+  // Método do ciclo de vida chamado quando o componente é destruído
+  ngOnDestroy() {
+    if (this.userSubscription) {
+      this.userSubscription.unsubscribe();
+    }
+  }
+
+  // Método para alterar a cor do tema consoante a escolha do utilizador
+  changeColor(event: any) {
+    this.color = event.target.value;  // Obtém o valor da cor escolhida no input
+    // Atualiza as variáveis CSS para a cor de fundo e cor primária da app
+    document.documentElement.style.setProperty('--app-bg', this.color);
+    document.documentElement.style.setProperty('--ion-color-primary', this.color);
+  }
+
+  // Método para mostrar/esconder a opção de escolher cor
+  toggleColorOption() {
+    this.showColorOption = !this.showColorOption;
+  }
+
+  // Método para efetuar logout do utilizador
+  async logout() {
+    try {
+      await this.afAuth.signOut();    // Chama o método de logout do Firebase
+      this.router.navigate(['/login']);  // Redireciona para a página de login
+    } catch (error) {
+      console.error('Logout failed:', error);  // Mostra erro caso falhe o logout
+    }
+  }
+}

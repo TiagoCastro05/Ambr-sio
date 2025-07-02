@@ -1,34 +1,33 @@
-<ion-content style="--background: #fff;">
-  <!-- Top row: logo, search bar, profile icon -->
-  <div class="top-row">
-    <ion-icon name="happy-outline" class="top-icon"></ion-icon>
-    <ion-searchbar placeholder="Pesquisa" class="searchbar"></ion-searchbar>
-    <ion-icon name="person-circle-outline" class="profile-icon"></ion-icon>
+<ion-content style="--background: var(--ion-color-light);">
+  <!-- Header -->
+  <div class="header" style="display: flex; align-items: center;">
+    <img src="assets/imagens/Ambrosio.png" alt="Ambrosio" class="header-icon" style="height: 40px; margin-right: 12px;" />
+    <h1 class="header-title">Ambrosio</h1>
+    <ion-icon name="person-circle-outline" class="header-icon" (click)="goToTab5()"></ion-icon>
   </div>
 
-  <!-- Welcome and bell row -->
-  <div class="welcome-row">
-    <div class="welcome-text">
-      Bem-vindo<br>ao Ambrósio
-    </div>
-    <ion-icon
-      [name]="notificationsActive ? 'notifications' : 'notifications-outline'"
-      class="bell-icon"
-      (click)="toggleNotifications()"
-      [style.color]="notificationsActive ? '#222' : '#222'">
+  <!-- Welcome Message -->
+  <div class="welcome-message">
+    <h1>Bem-vindo ao Ambrósio!</h1>
+    <p>A tua experiência começa aqui.</p>
+  </div>
+
+  <!-- Notification Icon -->
+  <div class="notification-icon">
+    <ion-icon 
+      [name]="notificationsActive ? 'notifications' : 'notifications-outline'" 
+      class="icon" 
+      (click)="toggleNotifications()">
     </ion-icon>
   </div>
-  <!-- Slideshow below the bell -->
+
+  <!-- Slideshow -->
   <div class="slideshow">
     <img [src]="images[currentImageIndex]" alt="Promoção" />
   </div>
 
-  <!-- "O teu Menu" below the slideshow -->
-  <div class="menu-title">
-    O teu Menu
-  </div>
-
-  <!-- Menu rectangles -->
+  <!-- Menu -->
+  <div class="menu-title">O teu Menu</div>
   <div class="menu-rectangles">
     <button class="menu-rectangle large" (click)="goToListas()">
       <ion-icon name="book-outline"></ion-icon>

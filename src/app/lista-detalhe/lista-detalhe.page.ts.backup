@@ -1,0 +1,320 @@
+import { Component, OnDestroy } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import { IonicModule, ToastController, AlertController } from '@ionic/angular';
+import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
+import { FirebaseService, Produto } from '../services/firebase.service';
+import { Subscription } from 'rxjs';
+
+@Component({
+  selector: 'app-lista-detalhe',
+  standalone: true,
+  imports: [IonicModule, FormsModule, CommonModule],
+  templateUrl: './lista-detalhe.page.html',
+  styleUrls: ['./lista-detalhe.page.scss'],
+})
+export class ListaDetalhePage implements OnDestroy {
+  // Nome da lista atual (obtido da rota)
+  nomeLista = '';
+
+  // Flags de controlo de interface
+  showManualForm = false;
+
+  // Lista de produtos adicionados à lista
+  produtos: Produto[] = [];
+  private subscription: Subscription = new Subscription();
+
+  // Objeto para edição/adicionar produto
+  produtoEmEdicao: Produto = {
+    loja: '',
+    tipoProduto: '',
+    produto: '',
+    quantidade: '',
+    validade: '',
+    preco: '',
+    listaNome: ''
+  };
+
+  // Listas para os dropdowns
+  lojas: string[] = [];
+  tiposProdutos: string[] = [];
+  nomesProdutos: { [categoria: string]: string[] } = {};
+  produtosFiltrados: string[] = [];
+
+  // Campos customizáveis
+  customLoja = '';
+  customTipoProduto = '';
+  customProduto = '';
+  showCustomLoja = false;
+  showCustomTipo = false;
+  showCustomProduto = false;
+
+  constructor(
+    private firebaseService: FirebaseService,
+    private route: ActivatedRoute,
+    private router: Router,
+    private toastController: ToastController,
+    private alertController: AlertController
+  ) {
+    this.nomeLista = this.route.snapshot.paramMap.get('nome') || '';
+    this.produtoEmEdicao.listaNome = this.nomeLista;
+    
+    // Inicializar dados dos dropdowns
+    this.lojas = this.firebaseService.getLojas();
+    this.tiposProdutos = this.firebaseService.getTiposProdutos();
+    this.nomesProdutos = this.firebaseService.getNomesProdutos();
+    
+    this.loadProdutos();
+  }
+
+  ngOnDestroy() {
+    this.subscription.unsubscribe();
+  }
+
+  // Carrega os produtos da lista a partir do Firebase
+  loadProdutos() {
+    this.subscription.add(
+      this.firebaseService.getProdutosByLista(this.nomeLista).subscribe(
+        produtos => {
+          this.produtos = produtos;
+        },
+        error => {
+          console.error('Erro ao carregar produtos:', error);
+          this.showToast('Erro ao carregar produtos', 'danger');
+        }
+      )
+    );
+  }
+
+  // Mostra o formulário manual para adicionar produtos
+  onAdicionarProdutos() {
+    this.produtoEmEdicao = {
+      loja: '',
+      tipoProduto: '',
+      produto: '',
+      quantidade: '',
+      validade: '',
+      preco: '',
+      listaNome: this.nomeLista
+    };
+    this.showManualForm = true;
+    this.resetCustomFields();
+  }
+
+  // Atualiza a lista de produtos quando o tipo de produto muda
+  onTipoProdutoChange() {
+    if (this.produtoEmEdicao.tipoProduto && this.produtoEmEdicao.tipoProduto !== 'custom') {
+      this.produtosFiltrados = this.nomesProdutos[this.produtoEmEdicao.tipoProduto] || [];
+      this.produtoEmEdicao.produto = ''; // Limpa o produto selecionado
+    } else {
+      this.produtosFiltrados = [];
+    }
+  }
+
+  // Métodos para mostrar campos customizados
+  onLojaChange() {
+    this.showCustomLoja = this.produtoEmEdicao.loja === 'custom';
+    if (!this.showCustomLoja) {
+      this.customLoja = '';
+    }
+  }
+
+  onTipoChange() {
+    this.showCustomTipo = this.produtoEmEdicao.tipoProduto === 'custom';
+    if (!this.showCustomTipo) {
+      this.customTipoProduto = '';
+    }
+    this.onTipoProdutoChange();
+  }
+
+  onProdutoChange() {
+    this.showCustomProduto = this.produtoEmEdicao.produto === 'custom';
+    if (!this.showCustomProduto) {
+      this.customProduto = '';
+    }
+  }
+
+  private resetCustomFields() {
+    this.customLoja = '';
+    this.customTipoProduto = '';
+    this.customProduto = '';
+    this.showCustomLoja = false;
+    this.showCustomTipo = false;
+    this.showCustomProduto = false;
+    this.produtosFiltrados = [];
+  }
+
+  // Guarda manualmente um novo produto após validação dos dados
+  async onSaveManual() {
+    // Usar valores customizados se aplicável
+    const lojaFinal = this.showCustomLoja ? this.customLoja.trim() : this.produtoEmEdicao.loja;
+    const tipoFinal = this.showCustomTipo ? this.customTipoProduto.trim() : this.produtoEmEdicao.tipoProduto;
+    const produtoFinal = this.showCustomProduto ? this.customProduto.trim() : this.produtoEmEdicao.produto;
+
+    // Valida se todos os campos foram preenchidos
+    if (
+      !lojaFinal ||
+      !tipoFinal ||
+      !produtoFinal ||
+      this.produtoEmEdicao.quantidade === '' ||
+      this.produtoEmEdicao.preco === '' ||
+      !this.produtoEmEdicao.validade
+    ) {
+      this.showToast('Preenche todos os campos.', 'warning');
+      return;
+    }
+
+    // Converte os campos numéricos e valida
+    const quantidadeNum = parseFloat(this.produtoEmEdicao.quantidade);
+    const precoNum = parseFloat(this.produtoEmEdicao.preco);
+
+    if (isNaN(quantidadeNum) || quantidadeNum <= 0) {
+      this.showToast('Quantidade deve ser um número positivo.', 'warning');
+      return;
+    }
+
+    if (isNaN(precoNum) || precoNum <= 0) {
+      this.showToast('Preço deve ser um número positivo.', 'warning');
+      return;
+    }
+
+    const data = new Date(this.produtoEmEdicao.validade);
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+
+    if (isNaN(data.getTime())) {
+      this.showToast('Data de validade inválida.', 'warning');
+      return;
+    }
+
+    if (data < hoje) {
+      this.showToast('A data de validade deve ser no futuro.', 'warning');
+      return;
+    }
+
+    // Criar produto com valores finais
+    const novoProduto: Produto = {
+      loja: lojaFinal,
+      tipoProduto: tipoFinal,
+      produto: produtoFinal,
+      quantidade: quantidadeNum.toString(),
+      validade: data.toISOString(),
+      preco: precoNum.toFixed(2),
+      listaNome: this.nomeLista
+    };
+
+    try {
+      await this.firebaseService.addProduto(novoProduto);
+      
+      // Adicionar ao histórico
+      await this.firebaseService.addHistorico({
+        nome: produtoFinal,
+        quantidade: quantidadeNum
+      });
+
+      this.showToast('Produto adicionado com sucesso!', 'success');
+      this.onCancelManual();
+    } catch (error) {
+      console.error('Erro ao adicionar produto:', error);
+      this.showToast('Erro ao adicionar produto', 'danger');
+    }
+  }
+
+  // Cancela a edição manual
+  onCancelManual() {
+    this.showManualForm = false;
+    this.resetCustomFields();
+  }
+
+  // Editar um produto existente
+  async editProduto(produto: Produto, index: number) {
+    const alert = await this.alertController.create({
+      header: 'Editar Produto',
+      inputs: [
+        {
+          name: 'quantidade',
+          type: 'number',
+          placeholder: 'Quantidade',
+          value: produto.quantidade
+        },
+        {
+          name: 'preco',
+          type: 'number',
+          placeholder: 'Preço',
+          value: produto.preco
+        }
+      ],
+      buttons: [
+        {
+          text: 'Cancelar',
+          role: 'cancel'
+        },
+        {
+          text: 'Guardar',
+          handler: async (data) => {
+            if (data.quantidade && data.preco && produto.id) {
+              try {
+                await this.firebaseService.updateProduto(produto.id, {
+                  quantidade: data.quantidade,
+                  preco: data.preco
+                });
+                this.showToast('Produto atualizado!', 'success');
+              } catch (error) {
+                console.error('Erro ao atualizar produto:', error);
+                this.showToast('Erro ao atualizar produto', 'danger');
+              }
+            }
+          }
+        }
+      ]
+    });
+
+    await alert.present();
+  }
+
+  // Eliminar um produto
+  async deleteProduto(produto: Produto, index: number) {
+    const alert = await this.alertController.create({
+      header: 'Eliminar Produto',
+      message: `Tens a certeza que queres eliminar "${produto.produto}"?`,
+      buttons: [
+        {
+          text: 'Cancelar',
+          role: 'cancel'
+        },
+        {
+          text: 'Eliminar',
+          role: 'destructive',
+          handler: async () => {
+            if (produto.id) {
+              try {
+                await this.firebaseService.deleteProduto(produto.id);
+                this.showToast('Produto eliminado!', 'success');
+              } catch (error) {
+                console.error('Erro ao eliminar produto:', error);
+                this.showToast('Erro ao eliminar produto', 'danger');
+              }
+            }
+          }
+        }
+      ]
+    });
+
+    await alert.present();
+  }
+
+  private async showToast(message: string, color: string) {
+    const toast = await this.toastController.create({
+      message: message,
+      duration: 2000,
+      color: color,
+      position: 'bottom'
+    });
+    await toast.present();
+  }
+
+  // Navegar de volta para a lista de listas
+  onBack() {
+    this.router.navigate(['/tabs/tab4']);
+  }
+}

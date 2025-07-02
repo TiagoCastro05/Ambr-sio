@@ -23,10 +23,23 @@ const routes: Routes = [
     loadComponent: () => import('./tab4/tab4.page').then(m => m.Tab4Page)
   },
   {
+    path: 'tabs/tab5',
+    loadComponent: () => import('./tab5/tab5.page').then(m => m.Tab5Page)
+  },
+  {
+  path: 'estatisticas',
+  loadChildren: () => import('./estatisticas/estatisticas.module').then(m => m.EstatisticasPageModule)
+},
+  {
     path: '',
     redirectTo: 'login',
     pathMatch: 'full'
+  },
+  {
+    path: 'estatisticas',
+    loadChildren: () => import('./estatisticas/estatisticas.module').then( m => m.EstatisticasPageModule)
   }
+
 ];
 
 @NgModule({

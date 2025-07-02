@@ -1,28 +1,63 @@
-<ion-header>
-  <ion-toolbar>
-    <ion-title>Perfil</ion-title>
-  </ion-toolbar>
-</ion-header>
+<ion-content [fullscreen]="true">
+  
+  <!-- Profile Avatar Section -->
+  <div class="profile-avatar-section">
+    <div class="avatar-container">
+      <ion-icon name="person-circle" class="avatar-icon"></ion-icon>
+    </div>
+    
+    <!-- User Info Display -->
+    <div class="user-info">
+      <h2 class="username">{{ user.nome || '[Nome não definido]' }}</h2>
+      <p class="user-email">{{ user.email || '[Email não definido]' }}</p>
+      <!-- Debug info (remover depois) -->
+      <small style="color: #999; font-size: 0.8rem;">
+        Debug: {{ user | json }}
+      </small>
+    </div>
+  </div>
 
-<ion-content class="ion-padding" style="--background: #fff;">
-  <div style="display: flex; flex-direction: column; align-items: center; margin-top: 32px;">
-    <ion-avatar style="width: 100px; height: 100px; margin-bottom: 16px;">
-      <ion-icon name="person-circle-outline" style="font-size: 100px; color: #888;"></ion-icon>
-    </ion-avatar>
-    <h2 style="margin: 0;">{{ user.nome || 'Nome de Utilizador' }}</h2>
-    <p style="margin: 4px 0 24px 0; color: #888;">{{ user.nome || 'Username' }}</p>
-
-    <ion-list style="width: 100%; max-width: 350px; margin-top: 32px; background: #fff; border-radius: 8px;">
-      <ion-item button (click)="toggleColorOption()" style="background: #fff;">
+  <!-- Settings Section -->
+  <div class="settings-section">
+    <ion-list>
+      <ion-item button (click)="toggleColorOption()">
         <ion-icon name="settings-outline" slot="start"></ion-icon>
-        <ion-label>Definições</ion-label>
+        <ion-label>
+          <h3>Definições</h3>
+          <p>Personalizar aparência</p>
+        </ion-label>
+        <ion-icon name="chevron-down-outline" slot="end" [class.expanded]="showColorOption"></ion-icon>
       </ion-item>
-      <ion-item *ngIf="showColorOption" style="background: #fff;">
-        <ion-label>Cor dos Botões</ion-label>
-        <input type="color" [value]="color" (input)="changeColor($event)" style="width: 40px; height: 40px; border: none; background: white;" />
-      </ion-item>
+      
+      <div class="color-option" [class.show]="showColorOption">
+        <ion-item>
+          <ion-label>
+            <h4>Cor do Tema</h4>
+          </ion-label>
+          <input 
+            type="color" 
+            [value]="color" 
+            (input)="changeColor($event)" 
+            class="color-picker" 
+            slot="end" />
+        </ion-item>
+      </div>
     </ion-list>
   </div>
+
+  <!-- Logout Button -->
+  <div class="logout-section">
+    <ion-button 
+      expand="block" 
+      fill="outline" 
+      color="danger" 
+      (click)="logout()" 
+      class="logout-button">
+      <ion-icon name="log-out-outline" slot="start"></ion-icon>
+      Terminar Sessão
+    </ion-button>
+  </div>
+
 </ion-content>
 
 

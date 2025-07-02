@@ -1,16 +1,128 @@
-ion-list, ion-item {
-  --background: #ffffff !important;
-  background: #ffffff !important;
-  color: #000 !important;
+ion-content {
+  --background: white;
+  --padding-top: 40px;
+  --padding-bottom: 20px;
+  --padding-start: 20px;
+  --padding-end: 20px;
 }
 
-ion-item {
-  --ion-item-background: #ffffff !important;
-  background: #fff !important;
-  border-radius: 12px;
-  color: #000 !important;
+// Profile Avatar Section
+.profile-avatar-section {
+  text-align: center;
+  margin-bottom: 30px;
+  margin-top: 20px;
+  
+  .avatar-container {
+    margin-bottom: 20px;
+    
+    .avatar-icon {
+      font-size: 120px;
+      color: #4ade80;
+    }
+  }
+  
+  .user-info {
+    .username {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #4ade80;
+      margin: 0 0 8px 0;
+    }
+    
+    .user-email {
+      font-size: 1rem;
+      color: #666;
+      margin: 0;
+    }
+  }
 }
 
-ion-label, ion-icon {
-  color: #000 !important;
+// Settings Section
+.settings-section {
+  margin-bottom: 30px;
+  
+  ion-list {
+    background: transparent;
+  }
+  
+  ion-item {
+    --background: transparent;
+    --border-color: transparent;
+    
+    ion-icon[slot="start"] {
+      color: #6366f1;
+      margin-right: 16px;
+    }
+    
+    ion-icon[slot="end"] {
+      color: #9ca3af;
+      transition: transform 0.3s ease;
+      
+      &.expanded {
+        transform: rotate(180deg);
+      }
+    }
+    
+    ion-label {
+      h3 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin: 0 0 4px 0;
+      }
+      
+      p {
+        font-size: 0.9rem;
+        color: #666;
+        margin: 0;
+      }
+      
+      h4 {
+        font-size: 1rem;
+        font-weight: 500;
+        margin: 0;
+      }
+    }
+  }
+  
+  .color-option {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    
+    &.show {
+      max-height: 80px;
+    }
+    
+    .color-picker {
+      width: 48px;
+      height: 32px;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      cursor: pointer;
+      outline: none;
+      
+      &:hover {
+        border-color: #6366f1;
+      }
+    }
+  }
+}
+
+// Logout Section
+.logout-section {
+  margin-top: 40px;
+  
+  .logout-button {
+    --color: #ef4444;
+    --border-color: #ef4444;
+    --border-width: 2px;
+    
+    height: 48px;
+    font-weight: 600;
+    font-size: 1rem;
+    
+    ion-icon {
+      margin-right: 8px;
+    }
+  }
 }

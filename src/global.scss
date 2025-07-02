@@ -35,3 +35,22 @@
 /* @import "@ionic/angular/css/palettes/dark.always.css"; */
 /* @import "@ionic/angular/css/palettes/dark.class.css"; */
 @import "@ionic/angular/css/palettes/dark.system.css";
+
+:root {
+  --ion-color-primary: #4CAF50;
+  --ion-color-secondary: #222;
+  --ion-color-light: #f4f4f4;
+  --ion-color-dark: #000;
+  --ion-color-ambrosio: #43a047; // Custom Ambrosio green
+}
+
+body {
+  font-family: 'Roboto', sans-serif; /* Use a modern font */
+  font-size: 16px; /* Base font size */
+  color: var(--ion-color-dark);
+}
+
+h1, h2, h3 {
+  font-weight: 600; /* Bold headings */
+  color: var(--ion-color-primary);
+}

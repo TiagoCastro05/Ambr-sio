@@ -10,38 +10,46 @@
 <ion-content class="ion-padding" style="--background: #fff; min-height: 100vh;">
   <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:40vh;">
 
-    <!-- Listas appear here, above the button -->
-    <div *ngIf="listas.length > 0" style="margin-bottom:32px;display:flex;flex-direction:column;align-items:center;width:100%;">
-      <ion-button *ngFor="let lista of listas"
-                  expand="block"
-                  style="width:220px; margin-bottom:12px;"
-                  [routerLink]="['/tabs/lista', lista.nome]">
-        {{ lista.nome }}
-      </ion-button>
+    <!-- Formulário para criar nova lista (aparece quando showCreateInput é true) -->
+    <div *ngIf="showCreateInput" style="width:100%;max-width:300px;margin-bottom:20px;border:1px solid #ddd;border-radius:8px;padding:16px;background:#f9f9f9;">
+      <ion-item style="--background:transparent;">
+        <ion-label position="floating">Nome da Lista</ion-label>
+        <ion-input [(ngModel)]="nomeLista"></ion-input>
+      </ion-item>
+      <div style="display:flex;justify-content:flex-end;margin-top:16px;gap:8px;">
+        <ion-button fill="outline" size="small" color="medium" (click)="onCancelLista()">
+          Cancelar
+        </ion-button>
+        <ion-button size="small" (click)="onSaveLista()">
+          Salvar
+        </ion-button>
+      </div>
     </div>
 
-    <!-- Adicionar Lista button and input -->
-    <ion-button fill="clear" *ngIf="!showCreateInput" (click)="onAddLista()" style="border:2px solid #222; border-radius:12px; width:220px; height:140px; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#fff;">
+    <!-- Listas appear here, above the button -->
+    <div *ngIf="listas.length > 0" style="margin-bottom:32px;display:flex;flex-direction:column;align-items:center;width:100%;">
+      <div *ngFor="let lista of listas" style="width:100%;max-width:300px;margin-bottom:12px;position:relative;">
+        <ion-button expand="block"
+                    style="width:100%;"
+                    [routerLink]="['/tabs/lista', lista.nome]">
+          {{ lista.nome }}
+        </ion-button>
+        <div style="position:absolute;top:0;right:-40px;display:flex;flex-direction:column;gap:4px;">
+          <ion-button fill="clear" size="small" (click)="editLista(lista)" style="--color:#007bff;">
+            <ion-icon name="create-outline"></ion-icon>
+          </ion-button>
+          <ion-button fill="clear" size="small" (click)="deleteLista(lista)" style="--color:#dc3545;">
+            <ion-icon name="trash-outline"></ion-icon>
+          </ion-button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Adicionar Lista button -->
+    <ion-button *ngIf="!showCreateInput" fill="clear" (click)="onAddLista()" style="border:2px solid #222; border-radius:12px; width:220px; height:140px; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#fff;">
       <ion-icon name="add-outline" style="font-size:64px; color:#222;"></ion-icon>
       <div style="font-size:1.2rem; color:#222; margin-top:8px;">Adicionar Lista</div>
     </ion-button>
 
-    <div *ngIf="showCreateInput" style="width:100%;max-width:350px;display:flex;flex-direction:column;align-items:center;">
-      <ion-input 
-        [(ngModel)]="nomeLista" 
-        placeholder="Nome da lista" 
-        style="background: #fff; color: #000; border: 1px solid #000; border-radius: 8px; padding-left: 12px;">
-      </ion-input>
-      <ion-button expand="block" (click)="onSaveLista()">Guardar</ion-button>
-    </div>
-
-    <div *ngFor="let lista of listas; let i = index">
-      <h2>{{ lista.nome }}</h2>
-      <ul>
-        <li *ngFor="let product of lista.products">
-          {{ product.nome }} ({{ product.quantidade }})
-        </li>
-      </ul>
-    </div>
   </div>
 </ion-content>
