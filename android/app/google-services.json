@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "699302332174",
+    "project_id": "ambrosio-fb8ee",
+    "storage_bucket": "ambrosio-fb8ee.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:699302332174:android:72f9047e9d18f55a08795f",
+        "android_client_info": {
+          "package_name": "com.ambrosio.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "699302332174-example.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDekhQgmyWeMXcDDHuDfSK_ZbSgPfS4bdI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "699302332174-example.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

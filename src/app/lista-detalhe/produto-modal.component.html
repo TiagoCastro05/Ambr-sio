@@ -1,0 +1,87 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>{{ isEdit ? 'Editar Produto' : 'Adicionar Produto' }}</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="dismiss()">
+        <ion-icon name="close"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [scrollY]="true" class="ion-padding">
+  <ion-item>
+    <ion-label position="stacked">Nome do Produto</ion-label>
+    <ion-input 
+      [(ngModel)]="produto.produto" 
+      placeholder="Ex: Leite, Pão, Arroz..."
+      clearInput
+      (ionFocus)="scrollToElement($event)">
+    </ion-input>
+  </ion-item>
+
+  <ion-item>
+    <ion-label position="stacked">Categoria</ion-label>
+    <ion-select 
+      [(ngModel)]="produto.categoria" 
+      placeholder="Selecione uma categoria"
+      (ionFocus)="scrollToElement($event)">
+      <ion-select-option value="Alimentar">Alimentar</ion-select-option>
+      <ion-select-option value="Higiene">Higiene</ion-select-option>
+      <ion-select-option value="Limpeza">Limpeza</ion-select-option>
+      <ion-select-option value="Bebidas">Bebidas</ion-select-option>
+      <ion-select-option value="Medicamentos">Medicamentos</ion-select-option>
+      <ion-select-option value="Outros">Outros</ion-select-option>
+    </ion-select>
+  </ion-item>
+
+  <ion-item>
+    <ion-label position="stacked">Preço (€)</ion-label>
+    <ion-input 
+      [(ngModel)]="produto.preco" 
+      type="number" 
+      step="0.01"
+      min="0"
+      placeholder="0.00"
+      (ionFocus)="scrollToElement($event)">
+    </ion-input>
+  </ion-item>
+
+  <!-- NOVA SEÇÃO: Quantidade e Unidade na mesma linha -->
+  <ion-item>
+    <ion-label position="stacked">Quantidade e Unidade</ion-label>
+    <div style="display: flex; width: 100%; align-items: center; gap: 10px;">
+      <!-- Input para quantidade -->
+      <ion-input 
+        [(ngModel)]="produto.quantidade" 
+        type="number" 
+        min="1"
+        step="1"
+        placeholder="1"
+        style="flex: 1; max-width: 80px;"
+        (ionFocus)="scrollToElement($event)">
+      </ion-input>
+      
+      <!-- Seletor de unidade -->
+      <ion-select 
+        [(ngModel)]="produto.unidade" 
+        placeholder="Unidade"
+        style="flex: 2;"
+        (ionFocus)="scrollToElement($event)">
+        <ion-select-option 
+          *ngFor="let unidade of unidades" 
+          [value]="unidade.valor">
+          {{ unidade.nome }}
+        </ion-select-option>
+      </ion-select>
+    </div>
+  </ion-item>
+
+  <ion-button 
+    expand="block" 
+    (click)="save()" 
+    [disabled]="!produto.produto || !produto.categoria"
+    style="margin: 20px;">
+    {{ isEdit ? 'Atualizar' : 'Adicionar' }} Produto
+  </ion-button>
+</ion-content>

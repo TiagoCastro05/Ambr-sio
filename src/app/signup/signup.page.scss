@@ -1,0 +1,46 @@
+.signup-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 100%;
+  padding: 20px 0;
+}
+
+.signup-form {
+  width: 90%;
+  max-width: 350px;
+  margin-bottom: 20px;
+}
+
+.button-container {
+  display: flex;
+  justify-content: space-between;
+  width: 90%;
+  max-width: 350px;
+  gap: 16px;
+}
+
+.button-container ion-button {
+  flex: 1;
+}
+
+// Melhorias para o teclado
+ion-content {
+  --keyboard-offset: 0px;
+}
+
+ion-item {
+  margin-bottom: 10px;
+}
+
+// Ajustes para dispositivos pequenos
+@media (max-height: 600px) {
+  .signup-container {
+    padding: 10px 0;
+  }
+  
+  .signup-form {
+    margin-bottom: 10px;
+  }
+}

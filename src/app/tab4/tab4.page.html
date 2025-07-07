@@ -10,18 +10,6 @@
 <ion-content class="ion-padding" style="--background: #fff; min-height: 100vh;">
   <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:40vh;">
 
-    <!-- Input para criar nova lista (visível apenas quando showCreateInput=true) -->
-    <div *ngIf="showCreateInput" style="width:100%;max-width:300px;margin-bottom:24px;">
-      <ion-item>
-        <ion-label position="floating">Nome da Lista</ion-label>
-        <ion-input [(ngModel)]="nomeLista" placeholder="Digite o nome da lista"></ion-input>
-      </ion-item>
-      <div style="display:flex;justify-content:space-between;margin-top:12px;">
-        <ion-button color="medium" (click)="onAddLista()">Cancelar</ion-button>
-        <ion-button color="primary" (click)="criarNovaLista()">Salvar Lista</ion-button>
-      </div>
-    </div>
-
     <!-- Listas appear here, above the button -->
     <div *ngIf="listas.length > 0" style="margin-bottom:32px;display:flex;flex-direction:column;align-items:center;width:100%;">
       <div *ngFor="let lista of listas" style="width:100%;max-width:300px;margin-bottom:12px;position:relative;">
@@ -41,8 +29,8 @@
       </div>
     </div>
 
-    <!-- Adicionar Lista button (visível apenas quando showCreateInput=false) -->
-    <ion-button *ngIf="!showCreateInput" fill="clear" (click)="onAddLista()" 
+    <!-- Adicionar Lista button -->
+    <ion-button fill="clear" (click)="onAddLista()" 
                 style="border:2px solid #222; border-radius:12px; width:220px; height:140px; 
                 display:flex; flex-direction:column; align-items:center; justify-content:center; background:#fff;">
       <ion-icon name="add-outline" style="font-size:64px; color:#222;"></ion-icon>

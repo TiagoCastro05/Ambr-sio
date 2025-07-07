@@ -6,10 +6,22 @@
     <ion-title>Histórico de Produtos</ion-title>
   </ion-toolbar>
 </ion-header>
+
 <ion-content class="ion-padding" style="--background: #fff;">
-  <ul style="list-style: none; padding: 0; margin: 0;">
-    <li *ngFor="let product of products" style="padding: 12px 0; border-bottom: 1px solid #eee;">
-      <span style="font-size: 1.1rem; color: #222;">{{ product.nome }}</span>
-    </li>
-  </ul>
+  <ion-list>
+    <ion-item *ngFor="let product of products" button="false">
+      <ion-label>
+        <h2>{{ product.nome }}</h2>
+        <p>Quantidade: {{ product.quantidade }}</p>
+        <p *ngIf="product.listaNome">Lista: {{ product.listaNome }}</p>
+        <p *ngIf="product.data">Data: {{ formatarData(product.data) }}</p>
+      </ion-label>
+    </ion-item>
+  </ion-list>
+  
+  <div *ngIf="products.length === 0" class="empty-state">
+    <ion-text color="medium">
+      <p>Nenhum produto no histórico</p>
+    </ion-text>
+  </div>
 </ion-content>

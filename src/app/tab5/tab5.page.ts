@@ -1,11 +1,21 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { IonicModule } from '@ionic/angular';
+import { IonicModule } fr        // Atualizar UI após sucesso apenas se não temos nome ainda
+        if (!this.user.nome || this.user.nome === '[Nome não definido]') {
+          const updatedUser = this.userService.getCurrentUser();
+          if (updatedUser) {
+            this.user = {
+              nome: updatedUser.nome || '[Nome não definido]',
+              email: updatedUser.email || '[Email não definido]',
+              telefone: updatedUser.telefone || ''
+            };
+            this.cdr.detectChanges();
+            console.log('TAB5 - ✅ UI atualizada após reload do Firestore');
+          }
+        }angular';
 import { FormsModule } from '@angular/forms';
 import { AuthUserService, UserProfile } from '../core/auth-user.service';
 import { Router } from '@angular/router';
-import { AngularFireAuth } from '@angular/fire/compat/auth';
-import { AngularFirestore } from '@angular/fire/compat/firestore';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -19,81 +29,58 @@ export class Tab5Page implements OnInit, OnDestroy {
   user: { nome?: string; email?: string; telefone?: string } = {};
   color = '#fff';
   showColorOption = false;
+  isLoading = false;
   private userSubscription?: Subscription;
 
   constructor(
     private userService: AuthUserService,
-    private afAuth: AngularFireAuth,
-    private firestore: AngularFirestore,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {}
 
   async ngOnInit() {
-    console.log('TAB5 - 🚀 ngOnInit iniciado');
+    console.log('TAB5 - 🔄 Iniciando carregamento do perfil...');
     
-    // ESTRATÉGIA DUPLA: Observable + Refresh manual
-    
-    // 1. Subscrever ao observable primeiro
-    this.userSubscription = this.userService.user$.subscribe((userData) => {
-      console.log('TAB5 - � Observable user$ recebido:', userData);
-      
-      if (userData) {
+    // PRIMEIRA PRIORIDADE: Buscar nome DIRETO do Firestore
+    try {
+      const nomeDirecto = await this.userService.getDirectUserName();
+      if (nomeDirecto && nomeDirecto.trim() !== '') {
+        console.log('TAB5 - ⚡ Nome DIRETO encontrado:', nomeDirecto);
         this.user = {
-          nome: userData.nome || '',
-          email: userData.email || '',
+          nome: nomeDirecto,
+          email: this.user.email || '[Email não definido]',
+          telefone: this.user.telefone || ''
+        };
+        this.cdr.detectChanges();
+        console.log('TAB5 - ✅ UI atualizada com nome DIRETO');
+      }
+    } catch (error) {
+      console.log('TAB5 - ⚠️ Erro na busca direta (tentando fallback):', error);
+    }
+    
+    // SEGUNDA PRIORIDADE: Carregar dados instantâneos como fallback
+    const instantUser = this.userService.getInstantUserData();
+    if (instantUser && (!this.user.nome || this.user.nome === '[Nome não definido]')) {
+      console.log('TAB5 - � Dados instantâneos de fallback:', instantUser);
+      this.user = {
+        nome: instantUser.nome || '[Nome não definido]',
+        email: instantUser.email || '[Email não definido]',
+        telefone: instantUser.telefone || ''
+      };
+      this.cdr.detectChanges();
+    }
+    
+    // TERCEIRA PRIORIDADE: Subscrever ao observable do usuário
+    this.userSubscription = this.userService.user$.subscribe((userData) => {
+      console.log('TAB5 - 📄 Dados recebidos do serviço:', userData);
+      if (userData && userData.nome && userData.nome.trim() !== '') {
+        this.user = {
+          nome: userData.nome || '[Nome não definido]',
+          email: userData.email || '[Email não definido]',
           telefone: userData.telefone || ''
         };
-        console.log('TAB5 - ✅ User atualizado via observable:', this.user);
-      }
-    });
-    
-    // 2. Forçar refresh do perfil
-    setTimeout(async () => {
-      console.log('TAB5 - � Forçando refresh do perfil...');
-      try {
-        await this.userService.forceReloadProfile();
-        
-        // Verificar o user depois do reload
-        const currentUser = this.userService.getCurrentUser();
-        console.log('TAB5 - � User após reload forçado:', currentUser);
-        
-        if (currentUser) {
-          this.user = {
-            nome: currentUser.nome || '',
-            email: currentUser.email || '',
-            telefone: currentUser.telefone || ''
-          };
-          console.log('TAB5 - ✅ User final após reload:', this.user);
-        }
-      } catch (error) {
-        console.error('TAB5 - ❌ Erro no reload forçado:', error);
-      }
-    }, 1000);
-    
-    // 3. Fallback: verificação direta do Firestore se nada funcionar
-    this.afAuth.authState.subscribe(async (authUser) => {
-      if (authUser && (!this.user.nome || this.user.nome === '')) {
-        console.log('TAB5 - 🆘 Fallback: verificação direta do Firestore para:', authUser.uid);
-        
-        try {
-          const docRef = await this.firestore.firestore.doc(`users/${authUser.uid}`).get();
-          
-          if (docRef.exists) {
-            const userData = docRef.data() as any;
-            console.log('TAB5 - 📄 Dados diretos do Firestore (fallback):', userData);
-            
-            if (userData.nome) {
-              this.user = {
-                nome: userData.nome || '',
-                email: userData.email || authUser.email || '',
-                telefone: userData.telefone || ''
-              };
-              console.log('TAB5 - ✅ User atualizado via fallback:', this.user);
-            }
-          }
-        } catch (error) {
-          console.error('TAB5 - ❌ Erro no fallback:', error);
-        }
+        console.log('TAB5 - ✅ User atualizado na UI:', this.user);
+        this.cdr.detectChanges();
       }
     });
   }
@@ -114,10 +101,112 @@ export class Tab5Page implements OnInit, OnDestroy {
 
   async logout() {
     try {
-      await this.afAuth.signOut();
+      console.log('TAB5 - 🚪 Iniciando logout...');
+      await this.userService.logout();
+      console.log('TAB5 - ✅ Logout realizado, redirecionando para login');
       this.router.navigate(['/login']);
     } catch (error) {
-      console.error('Erro ao fazer logout:', error);
+      console.error('TAB5 - ❌ Erro ao fazer logout:', error);
+    }
+  }
+
+  async reloadProfile() {
+    console.log('TAB5 - 🔄 Botão de recarregar perfil pressionado');
+    
+    this.isLoading = true;
+    
+    try {
+      // Mostrar feedback visual imediato
+      const button = document.querySelector('.reload-button ion-icon');
+      if (button) {
+        button.classList.add('spin-animation');
+      }
+      
+      // PRIMEIRA PRIORIDADE: Buscar nome DIRETO do Firestore
+      try {
+        const nomeDirecto = await this.userService.getDirectUserName();
+        if (nomeDirecto && nomeDirecto.trim() !== '') {
+          console.log('TAB5 - ⚡ Nome DIRETO encontrado no reload:', nomeDirecto);
+          this.user = {
+            nome: nomeDirecto,
+            email: this.user.email || '[Email não definido]',
+            telefone: this.user.telefone || ''
+          };
+          this.cdr.detectChanges();
+          console.log('TAB5 - ✅ UI atualizada com nome DIRETO no reload');
+        }
+      } catch (error) {
+        console.log('TAB5 - ⚠️ Erro na busca direta no reload:', error);
+      }
+      
+      // SEGUNDA TENTATIVA: Buscar dados instantâneos (sempre disponível)
+      const instantUser = this.userService.getInstantUserData();
+      if (instantUser && instantUser.nome && (!this.user.nome || this.user.nome === '[Nome não definido]')) {
+        console.log('TAB5 - 💾 Dados instantâneos encontrados:', instantUser);
+        this.user = {
+          nome: instantUser.nome || '[Nome não definido]',
+          email: instantUser.email || '[Email não definido]',
+          telefone: instantUser.telefone || ''
+        };
+        this.cdr.detectChanges();
+        console.log('TAB5 - ✅ UI atualizada com dados instantâneos');
+      }
+      
+      // TERCEIRA TENTATIVA: Reload do Firestore com timeout reduzido
+      const timeoutPromise = new Promise<void>((_, reject) => {
+        setTimeout(() => reject(new Error('Timeout')), 3000); // 3 segundos apenas
+      });
+
+      try {
+        // Forçar reload do perfil com timeout curto
+        await Promise.race([
+          this.userService.forceReloadProfile(),
+          timeoutPromise
+        ]);
+        
+        console.log('TAB5 - ✅ Perfil recarregado do Firestore');
+        
+        // Atualizar UI após sucesso
+        const updatedUser = this.userService.getCurrentUser();
+        if (updatedUser) {
+          this.user = {
+            nome: updatedUser.nome || '[Nome não definido]',
+            email: updatedUser.email || '[Email não definido]',
+            telefone: updatedUser.telefone || ''
+          };
+          this.cdr.detectChanges();
+          console.log('TAB5 - � UI atualizada após reload do Firestore');
+        }
+        
+      } catch (reloadError) {
+        console.log('TAB5 - ⚠️ Timeout/erro no reload (normal quando offline):', reloadError instanceof Error ? reloadError.message : 'Erro desconhecido');
+        // Não é um erro crítico, já temos dados instantâneos
+      }
+      
+    } catch (error) {
+      console.error('TAB5 - ❌ Erro geral ao recarregar perfil:', error);
+      
+      // Fallback final: tentar obter qualquer dado disponível
+      const fallbackUser = this.userService.getCurrentUser();
+      if (fallbackUser) {
+        console.log('TAB5 - 💾 Usando dados de fallback:', fallbackUser);
+        this.user = {
+          nome: fallbackUser.nome || '[Nome não definido]',
+          email: fallbackUser.email || '[Email não definido]',
+          telefone: fallbackUser.telefone || ''
+        };
+        this.cdr.detectChanges();
+      }
+    } finally {
+      this.isLoading = false;
+      
+      // Remover animação
+      setTimeout(() => {
+        const button = document.querySelector('.reload-button ion-icon');
+        if (button) {
+          button.classList.remove('spin-animation');
+        }
+      }, 500);
     }
   }
 }

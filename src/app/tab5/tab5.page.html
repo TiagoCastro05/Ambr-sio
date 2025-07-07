@@ -1,4 +1,4 @@
-<ion-content [fullscreen]="true">
+<ion-content [fullscreen]="true" class="profile-content">
   
   <!-- Profile Avatar Section -->
   <div class="profile-avatar-section">
@@ -10,10 +10,17 @@
     <div class="user-info">
       <h2 class="username">{{ user.nome || '[Nome não definido]' }}</h2>
       <p class="user-email">{{ user.email || '[Email não definido]' }}</p>
-      <!-- Debug info (remover depois) -->
-      <small style="color: #999; font-size: 0.8rem;">
-        Debug: {{ user | json }}
-      </small>
+      
+      <!-- Botão de Recarregar Perfil -->
+      <ion-button 
+        size="small" 
+        fill="clear" 
+        color="primary" 
+        (click)="reloadProfile()"
+        class="reload-button">
+        <ion-icon name="refresh-outline" slot="start"></ion-icon>
+        Recarregar Perfil
+      </ion-button>
     </div>
   </div>
 
@@ -45,19 +52,22 @@
     </ion-list>
   </div>
 
-  <!-- Logout Button -->
-  <div class="logout-section">
-    <ion-button 
-      expand="block" 
-      fill="outline" 
-      color="danger" 
-      (click)="logout()" 
-      class="logout-button">
-      <ion-icon name="log-out-outline" slot="start"></ion-icon>
-      Terminar Sessão
-    </ion-button>
-  </div>
+  <!-- Spacer para empurrar o botão para baixo -->
+  <div class="spacer"></div>
 
 </ion-content>
+
+<!-- Logout Button fixo na parte inferior -->
+<div class="logout-footer">
+  <ion-button 
+    expand="block" 
+    fill="outline" 
+    color="danger" 
+    (click)="logout()" 
+    class="logout-button">
+    <ion-icon name="log-out-outline" slot="start"></ion-icon>
+    Terminar Sessão
+  </ion-button>
+</div>
 
 

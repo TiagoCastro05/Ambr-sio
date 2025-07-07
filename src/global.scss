@@ -34,7 +34,7 @@
 
 /* @import "@ionic/angular/css/palettes/dark.always.css"; */
 /* @import "@ionic/angular/css/palettes/dark.class.css"; */
-@import "@ionic/angular/css/palettes/dark.system.css";
+/* @import "@ionic/angular/css/palettes/dark.system.css"; */
 
 :root {
   --ion-color-primary: #4CAF50;
@@ -55,58 +55,62 @@ h1, h2, h3 {
   color: var(--ion-color-primary);
 }
 
-/* Toast message styling */
-.toast-message {
-  text-align: center;
-  font-weight: 500;
-  font-size: 16px;
-  border-radius: 8px !important;
-  padding: 12px !important;
+/* Melhorias globais para o comportamento do teclado */
+ion-content {
+  --keyboard-offset: 0px;
+  --keyboard-resize: ionic;
 }
 
-ion-toast.success-toast {
-  --background: var(--ion-color-success);
-  --color: white;
-  --border-radius: 8px;
-  --box-shadow: 0 3px 12px rgba(0, 0, 0, 0.15);
+/* Estilos para inputs focados */
+ion-input:focus-within,
+ion-select:focus-within,
+ion-textarea:focus-within {
+  --border-color: var(--ion-color-primary);
+  --border-width: 2px;
 }
 
-ion-toast.danger-toast {
-  --background: var(--ion-color-danger);
-  --color: white;
-  --border-radius: 8px;
-  --box-shadow: 0 3px 12px rgba(0, 0, 0, 0.15);
+/* Melhorias para modais e páginas com formulários */
+.modal-wrapper {
+  --height: auto;
+  --max-height: 90vh;
 }
 
-/* Custom Toast Styling */
-.custom-toast {
-  --background: rgba(0, 0, 0, 0.8);
-  --color: white;
-  --border-radius: 8px;
-  --box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-  --min-height: 64px;
-  font-size: 16px;
-  font-weight: 500;
-  text-align: center;
-  z-index: 9999;
+/* Ajustes para teclados */
+.keyboard-is-open {
+  ion-content {
+    --keyboard-offset: 0px;
+  }
 }
 
-.custom-toast.ion-color-success {
-  --background: rgba(47, 223, 117, 0.98);
-  --color: #ffffff;
-  --box-shadow: 0 4px 16px rgba(47, 223, 117, 0.6);
-  z-index: 10000;
-  font-weight: 700;
-  --min-height: 70px;
-  --min-width: 280px;
+/* Estilos para elementos de formulário */
+.form-container {
+  padding: 20px;
+  padding-bottom: 100px; // Espaço extra para o teclado
 }
 
-.custom-toast.ion-color-danger {
-  --background: rgba(235, 68, 90, 0.98);
-  --color: #ffffff;
-  --box-shadow: 0 4px 16px rgba(235, 68, 90, 0.6);
-  z-index: 10000;
-  font-weight: 700;
-  --min-height: 70px;
-  --min-width: 280px;
+/* Suporte para auto-scroll em inputs */
+.auto-scroll-input {
+  transition: all 0.3s ease;
+}
+
+/* Ajustes para diferentes tamanhos de tela */
+@media (max-height: 600px) {
+  .form-container {
+    padding: 10px;
+    padding-bottom: 80px;
+  }
+}
+
+/* Estilos específicos para iOS */
+.ios {
+  ion-content {
+    --keyboard-resize: ionic;
+  }
+}
+
+/* Estilos específicos para Android */
+.md {
+  ion-content {
+    --keyboard-resize: ionic;
+  }
 }

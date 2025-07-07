@@ -16,24 +16,57 @@
     <!-- Produtos aparecem aqui, acima do botão -->
     <div *ngIf="produtos.length > 0" style="margin-bottom:32px;display:flex;flex-direction:column;align-items:center;width:100%;">
       <div *ngFor="let produto of produtos; let i = index" style="width:100%;max-width:350px;margin-bottom:12px;position:relative;">
-        <ion-card style="margin: 0; width: 100%;">
-          <ion-card-content style="padding: 16px;">
-            <div style="display: flex; justify-content: space-between; align-items: start;">
-              <div style="flex: 1;">
-                <h3 style="margin: 0 0 8px 0; font-weight: bold;">{{ produto.produto }}</h3>
-                <p style="margin: 0; color: #666; font-size: 0.9rem;">
+        <ion-card class="product-card">
+          <ion-card-content class="product-card-content">
+            <div class="product-card-container">
+              <!-- Imagem do produto -->
+              <div class="product-image-container">
+                <img 
+                  [src]="getProductImageUrl(produto)" 
+                  [alt]="produto.produto"
+                  class="product-image"
+                  [attr.data-produto]="produto.produto"
+                  [attr.data-categoria]="produto.tipoProduto"
+                  (error)="onImageError($event)"
+                />
+              </div>
+              
+              <!-- Informações do produto -->
+              <div class="product-info-section">
+                <h3>{{ produto.produto }}</h3>
+                <p>
                   <strong>Loja:</strong> {{ produto.loja }}<br>
                   <strong>Categoria:</strong> {{ produto.tipoProduto }}<br>
                   <strong>Quantidade:</strong> {{ produto.quantidade }}<br>
                   <strong>Preço:</strong> {{ produto.preco }}€<br>
                   <strong>Validade:</strong> {{ produto.validade }}
                 </p>
+                
+                <!-- Controle de quantidade consumida -->
+                <div class="quantity-controls">
+                  <span class="quantity-label">Consumido:</span>
+                  <ion-button fill="clear" size="small" (click)="diminuirQuantidade(produto, i)" class="quantity-button">
+                    <ion-icon name="chevron-down-outline"></ion-icon>
+                  </ion-button>
+                  <ion-input
+                    [value]="(produto.quantidadeConsumida || 0) + ' ' + produto.unidade"
+                    (ionBlur)="onQuantidadeConsumidaChange(produto, $event)"
+                    class="quantity-input"
+                    type="text"
+                    placeholder="0 ml">
+                  </ion-input>
+                  <ion-button fill="clear" size="small" (click)="aumentarQuantidade(produto, i)" class="quantity-button">
+                    <ion-icon name="chevron-up-outline"></ion-icon>
+                  </ion-button>
+                </div>
               </div>
-              <div style="display:flex;flex-direction:column;gap:4px;margin-left:12px;">
-                <ion-button fill="clear" size="small" (click)="editProduto(produto, i)" style="--color:#007bff;">
+              
+              <!-- Botões de ação -->
+              <div class="action-buttons">
+                <ion-button fill="clear" size="small" (click)="editProduto(produto, i)" class="action-button edit-button" title="Editar produto">
                   <ion-icon name="create-outline"></ion-icon>
                 </ion-button>
-                <ion-button fill="clear" size="small" (click)="deleteProduto(produto, i)" style="--color:#dc3545;">
+                <ion-button fill="clear" size="small" (click)="deleteProduto(produto, i)" class="action-button delete-button" title="Eliminar produto">
                   <ion-icon name="trash-outline"></ion-icon>
                 </ion-button>
               </div>

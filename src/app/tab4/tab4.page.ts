@@ -1,10 +1,11 @@
-import { Component, OnDestroy, inject } from '@angular/core';
-import { IonicModule } from '@ionic/angular';
+import { Component, OnDestroy, inject, ChangeDetectorRef } from '@angular/core';
+import { IonicModule, AlertController } from '@ionic/angular';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { AuthUserService } from '../core/auth-user.service';
 import { FirebaseService, Product, Lista } from '../services/firebase.service';
+import { HistoricoService } from '../services/historico.service';
 import { ToastController } from '@ionic/angular';
 import { Subscription } from 'rxjs';
 
@@ -22,22 +23,19 @@ interface Produto {
   styleUrls: ['./tab4.page.scss'],  // Ficheiro de estilos CSS associado
 })
 export class Tab4Page implements OnDestroy {
-  showCreateInput = false;     // Controlo para mostrar/esconder o campo de criação de nova lista
-  nomeLista = '';              // Nome da nova lista a criar
-
-  // Campos para registo de novo produto
-  productNome = '';
-  productQuantidade = 1;
-
   listas: Lista[] = [];          // Array para armazenar as listas de produtos
   private subscription: Subscription = new Subscription();
   
-  constructor(
-    private userService: AuthUserService,
-    private firebaseService: FirebaseService,
-    private toastController: ToastController,
-    private router: Router
-  ) {
+  // Usando inject() para resolver problema de EnvironmentInjector
+  private userService = inject(AuthUserService);
+  private firebaseService = inject(FirebaseService);
+  private historicoService = inject(HistoricoService);
+  private toastController = inject(ToastController);
+  private alertController = inject(AlertController);
+  private router = inject(Router);
+  private cdr = inject(ChangeDetectorRef);
+
+  constructor() {
     this.loadListas();    // Carrega as listas ao criar o componente
   }
 
@@ -49,14 +47,6 @@ export class Tab4Page implements OnDestroy {
   loadListas() {
     console.log('TAB4 - 🔍 Carregando listas...');
     
-    // Verificar se o usuário está autenticado
-    const userId = this.userService.getCurrentUserId();
-    if (!userId) {
-      console.warn('TAB4 - Usuário não está autenticado para carregar listas');
-      // Não mostramos erro para não interromper a experiência, mas registramos no console
-      return;
-    }
-    
     this.subscription.add(
       this.firebaseService.getListas().subscribe(
         listas => {
@@ -65,127 +55,133 @@ export class Tab4Page implements OnDestroy {
         },
         error => {
           console.error('TAB4 - ❌ Erro ao carregar listas:', error);
-          this.showToast('Erro ao carregar listas', 'danger', 'custom-toast ion-color-danger');
+          this.showToast('Erro ao carregar listas', 'danger');
         }
       )
     );
   }
 
-  // Método para alternar a exibição do campo de criação de lista
-  onAddLista() {
-    this.showCreateInput = !this.showCreateInput;
-    if (this.showCreateInput) {
-      this.nomeLista = '';
-    }
-  }
-  
-  // Criar nova lista com o nome digitado
-  async criarNovaLista() {
-    if (!this.nomeLista || !this.nomeLista.trim()) {
-      this.showToast('Digite um nome para a lista', 'warning', 'custom-toast');
-      return;
-    }
-    
-    try {
-      console.log('TAB4 - Criando lista:', this.nomeLista.trim());
-      
-      // Verificar se o usuário está autenticado antes de tentar criar a lista
-      const userId = this.userService.getCurrentUserId();
-      if (!userId) {
-        console.error('TAB4 - Usuário não autenticado');
-        this.showToast('Você precisa estar logado para criar listas', 'warning', 'custom-toast');
-        setTimeout(() => {
-          this.router.navigate(['/login']);
-        }, 2000);
-        return;
-      }
-      
-      // Mostrar toast de "Criando lista..." para feedback imediato ao usuário
-      const loadingToast = await this.toastController.create({
-        message: 'Criando lista...',
-        position: 'bottom',
-        duration: 3000,
-        color: 'medium',
-        cssClass: 'custom-toast'
-      });
-      await loadingToast.present();
-      
-      // Tentar criar a lista com timeout para evitar bloqueio
-      const createPromise = this.firebaseService.addLista({
-        nome: this.nomeLista.trim(),
-        products: []
-      });
-      
-      // Aplicar timeout de 8 segundos (aumentado para dar mais tempo)
-      const timeoutPromise = new Promise<string>((_, reject) => {
-        setTimeout(() => reject(new Error('Tempo esgotado ao criar lista')), 8000);
-      });
-      
-      try {
-        // Aguardar resultado com timeout
-        const listaId = await Promise.race([createPromise, timeoutPromise]);
-        
-        // Fechar o toast de carregamento
-        await loadingToast.dismiss();
-        
-        console.log('TAB4 - Lista criada com ID:', listaId);
-        
-        // Mostrar o toast de sucesso com a classe custom-toast
-        const successToast = await this.toastController.create({
-          message: 'Lista criada com sucesso!',
-          duration: 3000,
-          color: 'success',
-          position: 'middle', // Usando posição central para maior visibilidade
-          cssClass: 'custom-toast ion-color-success',
-          buttons: [
-            {
-              text: 'OK',
-              role: 'cancel'
+  // Método para mostrar modal de criação de nova lista
+  async onAddLista() {
+    const alert = await this.alertController.create({
+      header: 'Nova Lista',
+      message: 'Digite o nome da nova lista:',
+      inputs: [
+        {
+          name: 'nomeLista',
+          type: 'text',
+          placeholder: 'Nome da lista',
+          attributes: {
+            maxlength: 50
+          }
+        }
+      ],
+      buttons: [
+        {
+          text: 'Cancelar',
+          role: 'cancel'
+        },
+        {
+          text: 'Criar',
+          handler: (data) => {
+            if (data.nomeLista && data.nomeLista.trim()) {
+              this.criarNovaLista(data.nomeLista.trim());
+              return true;
+            } else {
+              this.showToast('Por favor, insira um nome para a lista', 'warning');
+              return false;
             }
-          ]
-        });
-        await successToast.present();
-        
-        this.showCreateInput = false;
-        this.nomeLista = '';
-        
-        // Recarregar listas automaticamente
-        setTimeout(() => {
-          this.loadListas();
-        }, 500);
-      } catch (innerError: any) {
-        // Fechar o toast de carregamento
-        await loadingToast.dismiss();
-        
-        console.error('TAB4 - Erro ao criar lista (timeout/firebase):', innerError);
-        
-        const errorMessage = innerError.message?.includes('Tempo esgotado') 
-          ? 'Tempo esgotado. Verifique sua conexão e tente novamente.'
-          : `Erro ao criar lista: ${innerError.message || 'Problema de conexão'}`;
-        
-        this.showToast(errorMessage, 'danger', 'custom-toast ion-color-danger');
-      }
-    } catch (error: any) {
-      console.error('TAB4 - Erro geral ao criar lista:', error);
-      this.showToast(`Erro ao criar lista: ${error.message || 'Problema de conexão'}`, 'danger', 'custom-toast ion-color-danger');
+          }
+        }
+      ]
+    });
+
+    await alert.present();
+  }
+
+  // Método para criar nova lista
+  async criarNovaLista(nomeLista: string) {
+    try {
+      console.log('TAB4 - 🚀 Iniciando criação de lista:', nomeLista);
+      
+      const listaData = {
+        nome: nomeLista,
+        products: []
+      };
+      
+      console.log('TAB4 - 📋 Dados da lista a criar:', listaData);
+      
+      const listaId = await this.firebaseService.addLista(listaData);
+      
+      console.log('TAB4 - ✅ Lista criada com ID:', listaId);
+      this.showToast('Lista criada com sucesso!', 'success');
+      
+      // Recarregar as listas
+      this.loadListas();
+      
+    } catch (error) {
+      console.error('TAB4 - ❌ Erro ao criar lista:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      this.showToast(`Erro ao criar lista: ${errorMessage}`, 'danger');
     }
   }
 
-  // Método para registar um novo produto através do serviço Firebase
-  async registerProduct() {
-    if (this.productNome.trim() && this.productQuantidade > 0) {
-      try {
-        await this.firebaseService.addProduct({
-          nome: this.productNome.trim(),
-          quantidade: this.productQuantidade
-        });
-        this.showToast('Produto adicionado com sucesso!', 'success', 'custom-toast ion-color-success');
-        this.productNome = '';
-        this.productQuantidade = 1;
-      } catch (error) {
-        console.error('Erro ao adicionar produto:', error);
-        this.showToast('Erro ao adicionar produto', 'danger', 'custom-toast ion-color-danger');
-      }
+  // Método para editar uma lista
+  async editLista(lista: Lista) {
+    const alert = await this.alertController.create({
+      header: 'Editar Lista',
+      message: 'Digite o novo nome da lista:',
+      inputs: [
+        {
+          name: 'nomeLista',
+          type: 'text',
+          placeholder: 'Nome da lista',
+          value: lista.nome,
+          attributes: {
+            maxlength: 50
+          }
+        }
+      ],
+      buttons: [
+        {
+          text: 'Cancelar',
+          role: 'cancel'
+        },
+        {
+          text: 'Atualizar',
+          handler: (data) => {
+            if (data.nomeLista && data.nomeLista.trim()) {
+              this.atualizarLista(lista.id!, data.nomeLista.trim());
+              return true;
+            } else {
+              this.showToast('Por favor, insira um nome para a lista', 'warning');
+              return false;
+            }
+          }
+        }
+      ]
+    });
+
+    await alert.present();
+  }
+
+  // Método para atualizar lista existente
+  async atualizarLista(listaId: string, novoNome: string) {
+    try {
+      console.log('TAB4 - 🔄 Editando lista:', listaId, novoNome);
+      
+      await this.firebaseService.updateLista(listaId, { nome: novoNome });
+      
+      console.log('TAB4 - ✅ Lista atualizada com sucesso');
+      this.showToast('Lista atualizada com sucesso!', 'success');
+      
+      // Recarregar as listas
+      this.loadListas();
+      
+    } catch (error) {
+      console.error('TAB4 - ❌ Erro ao atualizar lista:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      this.showToast(`Erro ao atualizar lista: ${errorMessage}`, 'danger');
     }
   }
 
@@ -195,31 +191,19 @@ export class Tab4Page implements OnDestroy {
       const updatedProducts = [...lista.products, { nome: productNome, quantidade: productQuantidade }];
       try {
         await this.firebaseService.updateLista(lista.id, { products: updatedProducts });
-        this.showToast('Produto adicionado à lista!', 'success', 'custom-toast ion-color-success');
+        
+        // Adicionar ao histórico
+        await this.historicoService.adicionar({
+          nome: productNome,
+          quantidade: productQuantidade,
+          listaNome: lista.nome,
+          listaId: lista.id
+        });
+        
+        this.showToast('Produto adicionado à lista!', 'success');
       } catch (error) {
         console.error('Erro ao adicionar produto à lista:', error);
-        this.showToast('Erro ao adicionar produto à lista', 'danger', 'custom-toast ion-color-danger');
-      }
-    }
-  }
-
-  // Método para editar uma lista (sem usar AlertController)
-  async editLista(lista: Lista) {
-    this.showCreateInput = true;
-    this.nomeLista = lista.nome;
-    
-    // Armazenamos o ID da lista sendo editada
-    const listaId = lista.id;
-    
-    // Implementar a edição quando o usuário confirmar
-    if (listaId) {
-      try {
-        await this.firebaseService.updateLista(listaId, { nome: this.nomeLista.trim() });
-        this.showToast('Lista atualizada!', 'success', 'custom-toast ion-color-success');
-        this.showCreateInput = false;
-      } catch (error) {
-        console.error('Erro ao atualizar lista:', error);
-        this.showToast('Erro ao atualizar lista', 'danger', 'custom-toast ion-color-danger');
+        this.showToast('Erro ao adicionar produto à lista', 'danger');
       }
     }
   }
@@ -230,10 +214,10 @@ export class Tab4Page implements OnDestroy {
       if (lista.id) {
         try {
           await this.firebaseService.deleteLista(lista.id);
-          this.showToast('Lista eliminada!', 'success', 'custom-toast ion-color-success');
+          this.showToast('Lista eliminada!', 'success');
         } catch (error) {
           console.error('Erro ao eliminar lista:', error);
-          this.showToast('Erro ao eliminar lista', 'danger', 'custom-toast ion-color-danger');
+          this.showToast('Erro ao eliminar lista', 'danger');
         }
       }
     }
@@ -242,20 +226,19 @@ export class Tab4Page implements OnDestroy {
   // Navegar para detalhe da lista
   navigateToLista(lista: Lista) {
     if (lista.id) {
-      this.router.navigate(['/tabs/lista', lista.id]);
+      const listaId = lista.id as string;
+      this.router.navigate(['/tabs/lista', listaId]);
     }
   }
 
   // Método utilitário para mostrar toasts de feedback
-  private async showToast(message: string, color: string, cssClass: string = 'toast-message') {
+  private async showToast(message: string, color: string) {
     const toast = await this.toastController.create({
       message: message,
-      duration: 3000,
+      duration: 2000,
       color: color,
-      position: 'bottom',
-      cssClass: cssClass
+      position: 'bottom'
     });
-    await toast.present();
-    return toast;
+    toast.present();
   }
 }

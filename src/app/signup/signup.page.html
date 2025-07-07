@@ -4,31 +4,59 @@
   </ion-toolbar>
 </ion-header>
 
-<ion-content>
-  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;">
-    <ion-list lines="none" style="width:90%;max-width:350px;">
+<ion-content [scrollY]="true" class="ion-padding">
+  <div class="signup-container">
+    <ion-list lines="none" class="signup-form">
       <ion-item>
         <ion-label position="stacked">E-mail</ion-label>
-        <ion-input type="email" [(ngModel)]="email"></ion-input>
+        <ion-input 
+          type="email" 
+          [(ngModel)]="email" 
+          placeholder="Digite seu e-mail"
+          (ionFocus)="scrollToElement($event)">
+        </ion-input>
       </ion-item>
       <ion-item>
         <ion-label position="stacked">Nome do Utilizador</ion-label>
-        <ion-input type="text" [(ngModel)]="username"></ion-input>
+        <ion-input 
+          type="text" 
+          [(ngModel)]="username" 
+          placeholder="Digite seu nome"
+          (ionFocus)="scrollToElement($event)">
+        </ion-input>
       </ion-item>
       <ion-item>
         <ion-label position="stacked">Palavra-Passe</ion-label>
-        <ion-input type="password" [(ngModel)]="password"></ion-input>
+        <ion-input 
+          type="password" 
+          [(ngModel)]="password" 
+          placeholder="Mínimo 6 caracteres"
+          (ionFocus)="scrollToElement($event)">
+        </ion-input>
       </ion-item>
       <ion-item>
-        <ion-label position="stacked">Palavra-Passe</ion-label>
-        <ion-input type="password" [(ngModel)]="confirmPassword"></ion-input>
+        <ion-label position="stacked">Confirmar Palavra-Passe</ion-label>
+        <ion-input 
+          type="password" 
+          [(ngModel)]="confirmPassword" 
+          placeholder="Confirme sua palavra-passe"
+          (ionFocus)="scrollToElement($event)">
+        </ion-input>
       </ion-item>
     </ion-list>
-    <div style="display:flex;justify-content:space-between;width:90%;max-width:350px;margin-top:16px;">
-      <ion-button fill="outline" color="secondary" expand="block" (click)="onBack()">Voltar para Login</ion-button>
-      <ion-button expand="block" (click)="onSignup()" [disabled]="isLoading">
-        <ion-spinner name="dots" *ngIf="isLoading"></ion-spinner>
-        <span *ngIf="!isLoading">Criar Conta</span>
+    <div class="button-container">
+      <ion-button 
+        fill="outline" 
+        color="secondary" 
+        expand="block" 
+        (click)="onBack()">
+        Voltar
+      </ion-button>
+      <ion-button 
+        expand="block" 
+        (click)="onSignup()" 
+        [disabled]="!email || !username || !password || !confirmPassword">
+        Criar Conta
       </ion-button>
     </div>
   </div>

@@ -14,8 +14,6 @@ import { Injectable } from '@angular/core';
 import { Storage } from '@ionic/storage-angular';
 import { IonicStorageModule } from '@ionic/storage-angular';
 
-import { BarcodeScanner } from '@awesome-cordova-plugins/barcode-scanner/ngx';
-
 @NgModule({
   declarations: [AppComponent],               // Declara o componente principal da app
   imports: [
@@ -24,21 +22,21 @@ import { BarcodeScanner } from '@awesome-cordova-plugins/barcode-scanner/ngx';
     AppRoutingModule,                         // Modulo que gere as rotas da aplicação
     AngularFireModule.initializeApp(environment.firebase), // Inicializa o Firebase com as credenciais do ambiente
     AngularFireAuthModule,                    // Módulo para autenticação Firebase
-    AngularFirestoreModule,  // Módulo para Firestore Database sem persistência para evitar problemas
+    AngularFirestoreModule.enablePersistence(),  // Habilitar persistência offline para Firestore
     IonicStorageModule.forRoot(),             // Módulo para armazenamento local (persistente)
     // outros imports podem ser adicionados aqui...
   ],
   providers: [
-    { provide: RouteReuseStrategy, useClass: IonicRouteStrategy }, 
-    BarcodeScanner,  // Estratégia para reutilizar rotas do Ionic
-    // Configurações otimizadas para Firestore
+    { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
+    // Configurações otimizadas para Firestore com persistência
     { 
       provide: FIRESTORE_SETTINGS, 
       useValue: { 
-        cacheSizeBytes: 5242880, // 5MB
+        cacheSizeBytes: 10485760, // 10MB (aumentado para melhor cache)
         ignoreUndefinedProperties: true,
         merge: true,                         // Allow field merging
-        synchronizeTabs: true                // Melhor suporte para múltiplas tabs
+        enablePersistence: true,             // Persistência offline
+        synchronizeTabs: false               // Melhor performance em single-tab
       } 
     }
   ],

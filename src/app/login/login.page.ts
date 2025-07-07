@@ -1,7 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { Router, ActivatedRoute } from '@angular/router';
-import { ToastController, IonicModule } from '@ionic/angular';
+import { Router } from '@angular/router';
+import { ToastController, IonicModule, IonContent } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
 import { AngularFireAuth } from '@angular/fire/compat/auth';
 import { AuthUserService, UserProfile } from '../core/auth-user.service';
@@ -14,23 +14,21 @@ import { FirebaseService } from '../services/firebase.service';
   standalone: true,
   imports: [IonicModule, CommonModule, ReactiveFormsModule], // Módulos necessários para a página
 })
-export class LoginPage implements OnInit {
+export class LoginPage {
+  @ViewChild(IonContent, { static: false }) content!: IonContent;
+  
   // Formulário reativo para autenticação
   authForm: FormGroup;
 
   // Define se está em modo de registo (signup) ou login
   isSignup = false;
-  
-  // Indica se veio de um redirecionamento do signup
-  cameFromSignup = false;
 
   constructor(
     private fb: FormBuilder,                // Utilizado para criar o formulário
     private afAuth: AngularFireAuth,        // Serviço de autenticação do Firebase
     private router: Router,                 // Usado para navegar após login/signup
-    private route: ActivatedRoute,          // Para ler parâmetros de URL
     private toastCtrl: ToastController,     // Mostra mensagens (toasts) de feedback
-    private userService: AuthUserService,   // Serviço para gestão do utilizador
+    private userService: AuthUserService,  // Serviço para gestão do utilizador
     private firebaseService: FirebaseService // Serviço para operações Firebase
   ) {
     // Criação do formulário com validações básicas
@@ -39,23 +37,6 @@ export class LoginPage implements OnInit {
       password: ['', [Validators.required, Validators.minLength(6)]], // Campo obrigatório com mínimo de 6 caracteres
       nome: [''],                                                 // Campo obrigatório apenas para signup
       telefone: [''],                                             // Campo opcional (pode ser usado em registo)
-    });
-  }
-  
-  ngOnInit() {
-    // Verificar se foi redirecionado da página de signup com email
-    this.route.queryParams.subscribe(params => {
-      if (params['email']) {
-        console.log('LOGIN - Email recebido do signup:', params['email']);
-        // Preencher o email no formulário
-        this.authForm.patchValue({
-          email: params['email']
-        });
-        this.cameFromSignup = true;
-        
-        // Mostrar mensagem adicional sobre a conta criada
-        this.showToast('Conta criada com sucesso! Por favor faça login agora.', 'success', 'custom-toast ion-color-success');
-      }
     });
   }
 
@@ -120,23 +101,13 @@ export class LoginPage implements OnInit {
           // Faz logout para garantir que o utilizador tem que fazer login novamente
           await this.afAuth.signOut();
           
-          // Mostra mensagem de sucesso com toast customizado
-          await this.showToast('Conta criada com sucesso! Faça login para continuar.', 'success', 'custom-toast ion-color-success');
-          
-          // Preenche o email para facilitar o login
-          const savedEmail = email;
-          
-          // Volta para o modo login e limpa o formulário automaticamente
+          // Volta para o modo login e limpa o formulário
           this.isSignup = false;
           this.updateFormValidations();
           this.authForm.reset();
           
-          // Preencher o email novamente para facilitar o login
-          setTimeout(() => {
-            this.authForm.patchValue({
-              email: savedEmail
-            });
-          }, 500);
+          // Mostra mensagem de sucesso
+          this.showToast('Conta criada com sucesso! Faça login para continuar.', 'success');
         } catch (error: any) {
           console.error('LOGIN - ❌ Erro no signup:', error);
           // Erro específico se o email já estiver em uso
@@ -147,92 +118,71 @@ export class LoginPage implements OnInit {
           }
         }
       } else {
-        // Modo login - VERSÃO ULTRA RÁPIDA COM TIMEOUT
+        // Modo login - COM VALIDAÇÃO REAL
         console.log('LOGIN - 🔑 Iniciando processo de login para:', email);
         try {
-          // Aplicando timeout para a autenticação para não travar a UI
-          const authPromise = this.afAuth.signInWithEmailAndPassword(email, password);
+          // Tentar autenticar no Firebase sem fallbacks
+          const userCredential = await this.afAuth.signInWithEmailAndPassword(email, password);
           
-          // Definir um timeout para a operação de auth (5 segundos - mais rápido)
-          const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error('Timeout na autenticação')), 5000);
-          });
-          
-          // Aguardar a autenticação ou o timeout
-          let userCredential;
-          try {
-            userCredential = await Promise.race([authPromise, timeoutPromise]) as any;
-          } catch (authError) {
-            console.error('LOGIN - ⚠️ Erro ou timeout na autenticação:', authError);
-            this.showToast('Problemas de conexão com o Firebase. Verificando localmente...', 'warning');
-            
-            // Em caso de erro de conexão, tentar usar algum dado em cache/local
-            try {
-              userCredential = {
-                user: {
-                  uid: 'temp-' + Date.now(),
-                  email: email,
-                  displayName: email.split('@')[0]
-                }
-              };
-              console.log('LOGIN - 🔄 Usando credencial temporária devido a problema de conexão');
-            } catch (fallbackError) {
-              throw new Error('Erro de autenticação: ' + ((authError as any)?.message || 'Problema de conexão'));
-            }
+          if (!userCredential.user) {
+            console.error('LOGIN - ❌ Credenciais inválidas');
+            this.showToast('Email ou senha incorretos', 'danger');
+            return;
           }
           
-          console.log('LOGIN - ✅ Utilizador autenticado:', userCredential?.user?.uid, userCredential?.user?.email);
+          console.log('LOGIN - ✅ Utilizador autenticado:', userCredential.user.uid, userCredential.user.email);
           
-          // PRIMEIROS PASSOS - DEVE SER INSTANTÂNEO:
-          // Criar um objeto usuário básico instantâneo
+          // Criar objeto usuário básico
           const basicUser = {
-            id: userCredential.user?.uid,
-            nome: userCredential.user?.displayName || email.split('@')[0] || 'Usuário',
-            email: userCredential.user?.email || email,
+            id: userCredential.user.uid,
+            nome: userCredential.user.displayName || '', // NÃO usar o email como nome
+            email: userCredential.user.email || email,
             telefone: ''
           };
           
-          // Definir usuário básico no serviço
+          // Definir usuário no serviço
           this.userService.user = basicUser;
           this.userService['userSubject'].next({...basicUser});
           
-          // Mostrar toast de sucesso imediatamente
-          this.showToast('Entrada com sucesso!', 'success', 'custom-toast ion-color-success');
+          // Mostrar toast de sucesso
+          this.showToast('Login realizado com sucesso!', 'success');
           
-          // Navegar para a página inicial IMEDIATAMENTE
-          console.log('LOGIN - 🚀 Navegando para /tabs/tab1 instantaneamente');
+          // Navegar para a página inicial
+          console.log('LOGIN - 🚀 Navegando para /tabs/tab1');
           this.router.navigate(['/tabs/tab1']);
           
-          // Carregamento mais completo em segundo plano (sem bloquear a UI)
+          // Carregamento completo do perfil em segundo plano
           setTimeout(() => {
-            // Forçar carregamento do perfil em paralelo (sem aguardar)
             this.userService.forceReloadProfile()
               .then(() => {
-                // Verificar se nome existe no perfil
-                const userData = this.userService.getCurrentUser();
-                console.log('LOGIN - 📄 Dados do perfil carregados em background:', userData);
-                
-                if (userData && (!userData.nome || userData.nome.trim() === '')) {
-                  const emailUsername = email.split('@')[0];
-                  console.log('LOGIN - ✏️ Atualizando nome de usuário para:', emailUsername);
-                  this.userService.updateUser({
-                    nome: emailUsername
-                  }).catch(e => console.log('LOGIN - Erro ao atualizar nome (não crítico):', e));
-                }
+                console.log('LOGIN - 📄 Perfil carregado em background');
               })
               .catch(error => {
                 console.log('LOGIN - ⚠️ Erro ao carregar perfil (não crítico):', error);
               });
           }, 100);
           
-          // Verificar dados órfãos em background após login (tempo ainda maior) - Versão simplificada
-          setTimeout(() => {
-            // Não precisamos verificar dados órfãos agora, foco na velocidade
-            console.log('LOGIN - Ignorando verificação de dados órfãos para maximizar velocidade');
-          }, 5000);
         } catch (error: any) {
           console.error('LOGIN - ❌ Erro no login:', error);
-          this.showToast('Falha de login: ' + error.message, 'danger');
+          
+          // Tratar erros específicos do Firebase
+          let errorMessage = 'Erro no login. Tente novamente.';
+          
+          if (error.code === 'auth/user-not-found') {
+            errorMessage = 'Email não encontrado. Verifique se criou uma conta.';
+          } else if (error.code === 'auth/wrong-password') {
+            errorMessage = 'Senha incorreta. Tente novamente.';
+          } else if (error.code === 'auth/invalid-email') {
+            errorMessage = 'Email inválido. Verifique o formato.';
+          } else if (error.code === 'auth/user-disabled') {
+            errorMessage = 'Conta desativada. Contacte o suporte.';
+          } else if (error.code === 'auth/too-many-requests') {
+            errorMessage = 'Muitas tentativas. Tente novamente mais tarde.';
+          } else if (error.code === 'auth/network-request-failed') {
+            errorMessage = 'Erro de conexão. Verifique sua internet.';
+          }
+          
+          this.showToast(errorMessage, 'danger');
         }
       }
     } catch (generalError) {
@@ -242,22 +192,13 @@ export class LoginPage implements OnInit {
   }
 
   // Método para mostrar uma mensagem de toast
-  private async showToast(message: string, color: string, cssClass: string = 'custom-toast') {
+  private async showToast(message: string, color: string) {
     const toast = await this.toastCtrl.create({
       message,
-      duration: 4000,
+      duration: 3000,
       color,
-      position: 'middle',
-      cssClass: cssClass,
-      buttons: [
-        {
-          text: 'OK',
-          role: 'cancel'
-        }
-      ]
     });
-    await toast.present();
-    return toast;
+    toast.present();
   }
 
   // Alterna entre modo login e registo
@@ -279,5 +220,18 @@ export class LoginPage implements OnInit {
     }
     this.authForm.get('email')?.updateValueAndValidity();
     this.authForm.get('nome')?.updateValueAndValidity();
+  }
+
+  // Método para fazer scroll automático quando o teclado aparece
+  scrollToElement(event: any) {
+    setTimeout(() => {
+      const element = event.target;
+      if (element && this.content) {
+        element.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center' 
+        });
+      }
+    }, 300);
   }
 }

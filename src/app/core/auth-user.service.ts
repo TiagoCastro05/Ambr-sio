@@ -34,175 +34,165 @@ export class AuthUserService {
   ) {
     console.log('AUTH SERVICE - 🚀 Construtor iniciado');
     
-    // Observa as mudanças de autenticação - SUPER OTIMIZADO PARA CARREGAMENTO INSTANTÂNEO
-    this.afAuth.authState.subscribe((user) => {
+    // Observa as mudanças de autenticação - CARREGAMENTO INSTANTÂNEO
+    this.afAuth.authState.subscribe(async (user) => {
       console.log('AUTH SERVICE - 🔐 AuthState changed:', user?.uid, user?.email);
       
       if (user) {
         this.currentUserId = user.uid;
         console.log('AUTH SERVICE - ✅ UserId definido:', this.currentUserId);
         
-        // Emitir um usuário básico IMEDIATAMENTE para que a UI possa mostrar algo
-        const basicUser = {
+        // PRIMEIRA PRIORIDADE: Tentar carregar nome do cache local
+        const cachedName = this.getUserNameFromCache(user.uid);
+        console.log('AUTH SERVICE - 💾 Nome do cache:', cachedName);
+        
+        const instantUser = {
           id: user.uid,
-          nome: user.displayName || user.email?.split('@')[0] || 'Usuário',
+          nome: cachedName || '', // Usar nome do cache se disponível
           email: user.email || '',
           telefone: ''
         };
         
-        this.user = basicUser;
+        this.user = instantUser;
+        this.userSubject.next({...instantUser});
+        console.log('AUTH SERVICE - ⚡ USER INSTANTÂNEO emitido (com cache):', instantUser);
         
-        // Emitir duas vezes em sequência para garantir que todos os componentes recebam
-        this.userSubject.next({...basicUser});
-        console.log('AUTH SERVICE - ⚡ Emitido usuário básico instantâneo:', basicUser);
+        // SEGUNDA PRIORIDADE: Carregar do Firestore em background (sem await)
+        this.loadUserProfileBackground(user.uid, cachedName);
         
-        // Carrega dados completos do perfil em paralelo sem bloquear a UI
-        setTimeout(() => {
-          this.loadUserProfile(user.uid)
-            .catch(err => console.error('AUTH SERVICE - ❌ Erro ao carregar perfil:', err));
-        }, 0);
       } else {
-        console.log('AUTH SERVICE - 🚪 Utilizador deslogado');
+        console.log('AUTH SERVICE - � Utilizador deslogado');
         this.currentUserId = null;
         this.user = null;
         this.userSubject.next(null);
       }
     });
-    
-    // Verificar se já há um utilizador autenticado (em background)
-    setTimeout(() => {
-      this.afAuth.currentUser.then(user => {
-        if (user && !this.currentUserId) {
-          console.log('AUTH SERVICE - 🔄 Utilizador já autenticado encontrado:', user.uid);
-          this.currentUserId = user.uid;
-          
-          // Emitir um usuário básico imediatamente
-          const basicUser = {
-            id: user.uid,
-            nome: user.displayName || user.email?.split('@')[0] || 'Usuário',
-            email: user.email || '',
-            telefone: ''
-          };
-          
-          this.user = basicUser;
-          this.userSubject.next({...basicUser});
-          
-          // Carregar perfil completo em background
-          this.loadUserProfile(user.uid)
-            .catch(err => console.error('AUTH SERVICE - ❌ Erro ao carregar perfil:', err));
-        }
-      }).catch(error => {
-        console.log('AUTH SERVICE - ⚠️ Erro ao verificar utilizador atual:', error);
+  }
+  
+  // Método para carregar perfil em background - VERSÃO OTIMIZADA PARA OFFLINE
+  private async loadUserProfileBackground(userId: string, cachedName: string | null): Promise<void> {
+    try {
+      console.log('AUTH SERVICE - 🔄 Carregando perfil em background...');
+      
+      const docRef = this.firestore.firestore.doc(`users/${userId}`);
+      
+      // Usar timeout mais agressivo para background
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Timeout background')), 2000); // 2 segundos apenas
       });
-    }, 0);
+      
+      const doc = await Promise.race([
+        docRef.get(),
+        timeoutPromise
+      ]);
+      
+      if (doc && doc.exists) {
+        const userData = doc.data() as UserProfile;
+        console.log('AUTH SERVICE - 📄 DADOS DO FIRESTORE (background):', userData);
+        
+        const userProfile = { 
+          ...userData, 
+          id: userId
+        };
+        
+        // Atualizar cache se o nome mudou
+        if (userData.nome && userData.nome !== cachedName) {
+          this.saveUserNameToCache(userId, userData.nome);
+        }
+        
+        this.user = userProfile;
+        this.userSubject.next({...userProfile});
+        console.log('AUTH SERVICE - ✅ USER FINAL atualizado (background):', userProfile);
+      }
+    } catch (error) {
+      console.log('AUTH SERVICE - ⚠️ Erro no carregamento background (normal quando offline):', error instanceof Error ? error.message : 'Erro desconhecido');
+      // Não é um erro crítico, continua com dados do cache
+    }
   }
 
-  // Carrega o perfil do utilizador do Firestore com ULTRA PERFORMANCE
+  // Carrega o perfil do utilizador do Firestore - VERSÃO OTIMIZADA PARA OFFLINE
   private async loadUserProfile(userId: string): Promise<UserProfile> {
     try {
-      console.log('AUTH SERVICE - 🔍 CARREGANDO perfil para userId:', userId);
+      console.log('AUTH SERVICE - 🔍 Carregando perfil para:', userId);
       
-      // Implementar um timeout global para toda a operação
-      const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout global')), 3000)
-      );
+      const docRef = this.firestore.firestore.doc(`users/${userId}`);
       
-      // Criar a promise principal do carregamento
-      const loadPromise = new Promise<UserProfile>(async (resolve) => {
-        try {
-          const docRef = this.firestore.firestore.doc(`users/${userId}`);
+      // Tentar cache offline primeiro (mais rápido)
+      try {
+        const cachedDoc = await docRef.get({ source: 'cache' });
+        if (cachedDoc && cachedDoc.exists) {
+          const userData = cachedDoc.data() as UserProfile;
+          console.log('AUTH SERVICE - 💾 Dados do cache Firebase:', userData);
           
-          // Tentar obter o documento com timeout de 1.5s
-          let doc;
-          try {
-            doc = await Promise.race([
-              docRef.get(),
-              new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Firestore timeout')), 1500))
-            ]);
-          } catch (fetchErr) {
-            console.log('AUTH SERVICE - ⏱️ Timeout ao buscar do Firestore, usando dados básicos');
-            throw fetchErr; // Repropagar para usar o fallback
-          }
-          
-          if (doc && doc.exists) {
-            const userData = doc.data() as UserProfile;
-            console.log('AUTH SERVICE - 📄 DADOS DO FIRESTORE:', userData);
-            
-            const userProfile = { 
-              ...userData, 
-              id: userId
-            };
-            
-            this.user = userProfile;
-            this.userSubject.next({...userProfile});
-            console.log('AUTH SERVICE - ✅ USER FINAL carregado e emitido:', userProfile);
-            
-            resolve(userProfile);
-            return;
-          }
-          
-          throw new Error('Documento não existe');
-        } catch (error) {
-          // Fallback: criar um usuário básico
-          console.log('AUTH SERVICE - ⚠️ Usando fallback para criar user básico');
-          const authUser = await this.afAuth.currentUser;
-          
-          if (!authUser) {
-            throw new Error('Usuário Auth não disponível');
-          }
-          
-          const basicProfile = {
-            id: userId,
-            nome: authUser.displayName || authUser.email?.split('@')[0] || 'Usuário',
-            email: authUser.email || '',
-            telefone: ''
+          const userProfile = { 
+            ...userData, 
+            id: userId
           };
           
-          // Salvar no Firestore sem bloquear
-          this.firestore.firestore.doc(`users/${userId}`).set({
-            nome: basicProfile.nome,
-            email: basicProfile.email,
-            telefone: basicProfile.telefone
-          }).catch(err => console.error('AUTH SERVICE - Erro ao salvar perfil básico:', err));
+          this.user = userProfile;
+          this.userSubject.next({...userProfile});
+          console.log('AUTH SERVICE - ⚡ Perfil carregado do cache e emitido:', userProfile);
           
-          this.user = basicProfile;
-          this.userSubject.next({...basicProfile});
-          console.log('AUTH SERVICE - 📝 User básico criado e emitido:', basicProfile);
+          // Salvar no cache local
+          if (userData.nome) {
+            this.saveUserNameToCache(userId, userData.nome);
+          }
           
-          resolve(basicProfile);
+          return userProfile;
         }
-      });
-      
-      // Combinar o carregamento com o timeout global
-      const userProfile = await Promise.race([loadPromise, timeoutPromise]);
-      
-      // Emitir novamente após um curto intervalo para garantir que todos os componentes recebam
-      setTimeout(() => {
-        if (this.user) {
-          console.log('AUTH SERVICE - 🔄 Re-emitindo user via observable (delayed)');
-          this.userSubject.next({...this.user});
-        }
-      }, 500);
-      
-      return userProfile;
-    } catch (error) {
-      console.error('AUTH SERVICE - ❌ ERRO FINAL ao carregar perfil:', error);
-      
-      // Último recurso: usar o que tiver ou criar mínimo
-      const fallbackProfile = this.user || {
-        id: userId,
-        nome: '',
-        email: '',
-        telefone: ''
-      };
-      
-      if (!this.user) {
-        this.user = fallbackProfile;
-        this.userSubject.next(fallbackProfile);
-        console.log('AUTH SERVICE - 🆘 Último recurso: perfil mínimo criado');
+      } catch (cacheError) {
+        console.log('AUTH SERVICE - ⚠️ Cache Firebase não disponível:', cacheError instanceof Error ? cacheError.message : 'Erro desconhecido');
       }
       
-      return fallbackProfile;
+      // Se cache não funcionou, tentar servidor (com timeout mais agressivo)
+      const docPromise = docRef.get();
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Timeout do servidor')), 2000); // 2 segundos apenas
+      });
+      
+      const doc = await Promise.race([docPromise, timeoutPromise]);
+      
+      if (doc && doc.exists) {
+        const userData = doc.data() as UserProfile;
+        console.log('AUTH SERVICE - 📄 Dados do Firestore (servidor):', userData);
+        
+        const userProfile = { 
+          ...userData, 
+          id: userId
+        };
+        
+        // Salvar no cache
+        if (userData.nome) {
+          this.saveUserNameToCache(userId, userData.nome);
+        }
+        
+        this.user = userProfile;
+        this.userSubject.next({...userProfile});
+        console.log('AUTH SERVICE - ✅ Perfil carregado e emitido:', userProfile);
+        
+        return userProfile;
+      } else {
+        console.log('AUTH SERVICE - ⚠️ Documento não existe no Firestore');
+        return this.user || { id: userId, nome: '', email: '', telefone: '' };
+      }
+      
+    } catch (error) {
+      console.log('AUTH SERVICE - ⚠️ Erro ao carregar perfil:', error instanceof Error ? error.message : 'Erro desconhecido');
+      
+      // Tentar usar cache local como último recurso
+      const cachedName = this.getUserNameFromCache(userId);
+      if (cachedName) {
+        const fallbackUser = {
+          id: userId,
+          nome: cachedName,
+          email: this.user?.email || '',
+          telefone: this.user?.telefone || ''
+        };
+        console.log('AUTH SERVICE - 🔄 Usando cache local como fallback:', fallbackUser);
+        return fallbackUser;
+      }
+      
+      return this.user || { id: userId, nome: '', email: '', telefone: '' };
     }
   }
 
@@ -231,6 +221,11 @@ export class AuthUserService {
       await this.firestore.firestore.doc(`users/${userId}`).set(userToSave);
       
       console.log('AUTH SERVICE - ✅ SALVO NO FIRESTORE! Atualizando cache local...');
+      
+      // Salvar nome no cache local para acesso instantâneo
+      if (userToSave.nome) {
+        this.saveUserNameToCache(userId, userToSave.nome);
+      }
       
       this.user = { ...userToSave, id: userId };
       this.userSubject.next(this.user);
@@ -268,90 +263,60 @@ export class AuthUserService {
     return this.getCurrentUser();
   }
 
-  // Força o recarregamento do perfil do utilizador - VERSÃO ULTRA OTIMIZADA
+  // Força o recarregamento do perfil do utilizador - VERSÃO OTIMIZADA PARA OFFLINE
   async forceReloadProfile(): Promise<void> {
-    console.log('AUTH SERVICE - 🔄 FORÇANDO reload do perfil...');
+    console.log('AUTH SERVICE - 🔄 Forçando reload do perfil...');
     
-    if (this.currentUserId) {
-      try {
-        // Primeiro, emite um perfil básico IMEDIATAMENTE com base nas informações do Auth
-        // ou nas informações já em cache
-        let instantProfile: UserProfile;
-        
-        if (this.user) {
-          // Se já temos dados no cache, usar imediatamente
-          instantProfile = {...this.user};
-          console.log('AUTH SERVICE - ⚡ Usando perfil em cache para emissão instantânea');
-        } else {
-          // Se não tem cache, tentar obter do Auth
-          const authUser = await this.afAuth.currentUser;
-          instantProfile = {
+    if (!this.currentUserId) {
+      console.log('AUTH SERVICE - ⚠️ Nenhum utilizador autenticado');
+      return;
+    }
+
+    try {
+      console.log('AUTH SERVICE - 🚀 Recarregando perfil para:', this.currentUserId);
+      
+      // PRIMEIRA TENTATIVA: Usar dados do cache local instantaneamente
+      const cachedName = this.getUserNameFromCache(this.currentUserId);
+      if (cachedName && this.user) {
+        console.log('AUTH SERVICE - ⚡ Usando cache local primeiro:', cachedName);
+        this.user.nome = cachedName;
+        this.userSubject.next({...this.user});
+      }
+      
+      // SEGUNDA TENTATIVA: Tentar Firestore com timeout curto
+      const timeoutPromise = new Promise<void>((_, reject) => {
+        setTimeout(() => reject(new Error('Timeout')), 3000); // 3 segundos apenas
+      });
+
+      // Carregar com timeout curto
+      await Promise.race([
+        this.loadUserProfile(this.currentUserId),
+        timeoutPromise
+      ]);
+      
+      console.log('AUTH SERVICE - ✅ Perfil recarregado do Firestore');
+    } catch (error) {
+      console.log('AUTH SERVICE - ⚠️ Erro no forceReloadProfile (usando cache):', error instanceof Error ? error.message : 'Erro desconhecido');
+      
+      // Se falhar, garantir que pelo menos temos dados do cache
+      if (this.user) {
+        console.log('AUTH SERVICE - 💾 Mantendo dados do cache local');
+        this.userSubject.next({...this.user});
+      } else if (this.currentUserId) {
+        // Último recurso: criar dados básicos do cache
+        const cachedName = this.getUserNameFromCache(this.currentUserId);
+        if (cachedName) {
+          const fallbackUser = {
             id: this.currentUserId,
-            nome: authUser?.displayName || authUser?.email?.split('@')[0] || 'Usuário',
-            email: authUser?.email || '',
+            nome: cachedName,
+            email: '',
             telefone: ''
           };
-          console.log('AUTH SERVICE - ⚡ Criando perfil básico para emissão instantânea');
+          this.user = fallbackUser;
+          this.userSubject.next({...fallbackUser});
+          console.log('AUTH SERVICE - 🔄 Usando dados básicos do cache:', fallbackUser);
         }
-        
-        // Atualizar o perfil no cache e emitir imediatamente
-        this.user = instantProfile;
-        this.userSubject.next({...instantProfile});
-        console.log('AUTH SERVICE - ⚡ Perfil instantâneo emitido:', instantProfile);
-        
-        // Em background, inicia a busca no Firestore com tempo limite menor
-        setTimeout(async () => {
-          try {
-            const docRef = this.firestore.firestore.doc(`users/${this.currentUserId}`);
-            
-            // Tentando obter perfil com um limite de tempo mais curto (800ms)
-            const doc: any = await Promise.race([
-              docRef.get(),
-              new Promise<never>((_, reject) => 
-                setTimeout(() => reject(new Error('Timeout')), 800)
-              )
-            ]);
-            
-            if (doc && doc.exists) {
-              const firestoreData = doc.data() as UserProfile;
-              console.log('AUTH SERVICE - 📄 Perfil obtido do Firestore:', firestoreData);
-              
-              // Atualizar o perfil e emitir
-              this.user = { 
-                ...firestoreData, 
-                id: this.currentUserId || undefined 
-              };
-              
-              this.userSubject.next({...this.user});
-              console.log('AUTH SERVICE - ✅ Perfil completo do Firestore emitido');
-            } else {
-              console.log('AUTH SERVICE - ⚠️ Documento não existe no Firestore');
-              
-              // Se o documento não existe, criar um com o perfil básico
-              const authUser = await this.afAuth.currentUser;
-              if (authUser) {
-                const basicProfile = {
-                  nome: authUser.displayName || authUser.email?.split('@')[0] || 'Usuário',
-                  email: authUser.email || '',
-                  telefone: ''
-                };
-                
-                docRef.set(basicProfile)
-                  .then(() => console.log('AUTH SERVICE - ✓ Perfil básico criado no Firestore'))
-                  .catch((err: Error) => console.error('AUTH SERVICE - Erro ao salvar perfil:', err));
-              }
-            }
-          } catch (err) {
-            console.log('AUTH SERVICE - ⏱️ Timeout ao buscar perfil do Firestore, usando perfil básico', err);
-          }
-        }, 100);
-        
-        return;
-      } catch (error) {
-        console.error('AUTH SERVICE - ❌ Erro no forceReloadProfile:', error);
       }
-    } else {
-      console.log('AUTH SERVICE - ⚠️ Nenhum utilizador autenticado para reload');
     }
   }
 
@@ -362,13 +327,57 @@ export class AuthUserService {
     }
 
     try {
-      await this.firestore.firestore.doc(`users/${this.currentUserId}`).update(updates);
-      if (this.user) {
-        this.user = { ...this.user, ...updates };
-        this.userSubject.next(this.user);
+      console.log('AUTH SERVICE - 🔧 Atualizando usuário:', this.currentUserId, 'com dados:', updates);
+      
+      const docRef = this.firestore.firestore.doc(`users/${this.currentUserId}`);
+      
+      // Verificar se o documento existe
+      const doc = await docRef.get();
+      
+      if (doc.exists) {
+        // Se existe, fazer update
+        console.log('AUTH SERVICE - 📝 Documento existe, fazendo update...');
+        await docRef.update(updates);
+      } else {
+        // Se não existe, criar com set
+        console.log('AUTH SERVICE - 📝 Documento não existe, criando com set...');
+        const currentUser = await this.afAuth.currentUser;
+        const fullData = {
+          nome: updates.nome || '',
+          email: updates.email || currentUser?.email || '',
+          telefone: updates.telefone || '',
+          ...updates
+        };
+        await docRef.set(fullData);
       }
+      
+      console.log('AUTH SERVICE - ✅ Dados salvos no Firestore');
+      
+      // Atualizar cache local se o nome foi alterado
+      if (updates.nome && this.currentUserId) {
+        this.saveUserNameToCache(this.currentUserId, updates.nome);
+      }
+      
+      // Atualizar cache local
+      if (this.user) {
+        this.user = { ...this.user, ...updates, id: this.currentUserId };
+      } else {
+        this.user = { ...updates, id: this.currentUserId } as UserProfile;
+      }
+      
+      console.log('AUTH SERVICE - 📢 Emitindo usuário atualizado:', this.user);
+      this.userSubject.next({...this.user});
+      
+      // Verificar se foi realmente salvo
+      const verification = await docRef.get();
+      if (verification.exists) {
+        console.log('AUTH SERVICE - ✅ Verificação: Dados confirmados no Firestore:', verification.data());
+      } else {
+        console.error('AUTH SERVICE - ❌ Verificação: Dados NÃO foram salvos!');
+      }
+      
     } catch (error) {
-      console.error('Erro ao atualizar utilizador:', error);
+      console.error('AUTH SERVICE - ❌ Erro ao atualizar utilizador:', error);
       throw error;
     }
   }
@@ -419,5 +428,175 @@ export class AuthUserService {
         }
       })
     );
+  }
+
+  // Método para verificar e corrigir o nome do utilizador automaticamente
+  async verificarECorrigirNomeSeNecessario(): Promise<void> {
+    console.log('AUTH SERVICE - 🔍 Verificando se o nome precisa ser carregado...');
+    
+    if (!this.currentUserId) {
+      console.log('AUTH SERVICE - ⚠️ Nenhum utilizador autenticado para verificar o nome');
+      return;
+    }
+
+    try {
+      // Verificar se já existe um nome válido no Firestore
+      const docRef = this.firestore.firestore.doc(`users/${this.currentUserId}`);
+      const doc = await docRef.get();
+      
+      if (doc.exists) {
+        const firestoreData = doc.data() as any;
+        const nomeNoFirestore = firestoreData?.nome || '';
+        
+        console.log('AUTH SERVICE - 📄 Nome no Firestore:', nomeNoFirestore);
+        
+        // Se existe um nome no Firestore, usar ele
+        if (nomeNoFirestore && nomeNoFirestore.trim() !== '') {
+          console.log('AUTH SERVICE - ✅ Nome encontrado no Firestore:', nomeNoFirestore);
+          
+          // Atualizar o cache local com o nome do Firestore
+          if (this.user) {
+            this.user.nome = nomeNoFirestore;
+            this.userSubject.next({...this.user});
+            console.log('AUTH SERVICE - 🔄 Cache local atualizado com nome do Firestore:', nomeNoFirestore);
+          }
+        } else {
+          console.log('AUTH SERVICE - ⚠️ Nome não encontrado no Firestore');
+        }
+      } else {
+        console.log('AUTH SERVICE - ⚠️ Documento não existe no Firestore');
+      }
+      
+    } catch (error) {
+      console.error('AUTH SERVICE - ❌ Erro ao verificar nome:', error);
+    }
+  }
+
+  // Método para logout
+  async logout(): Promise<void> {
+    console.log('AUTH SERVICE - 🚪 Fazendo logout...');
+    try {
+      await this.afAuth.signOut();
+      this.currentUserId = null;
+      this.user = null;
+      this.userSubject.next(null);
+      console.log('AUTH SERVICE - ✅ Logout realizado com sucesso');
+    } catch (error) {
+      console.error('AUTH SERVICE - ❌ Erro ao fazer logout:', error);
+      throw error;
+    }
+  }
+
+  // Cache local para nome do usuário
+  private getUserNameFromCache(userId: string): string | null {
+    try {
+      const cacheKey = `user_name_${userId}`;
+      return localStorage.getItem(cacheKey);
+    } catch (error) {
+      console.log('AUTH SERVICE - ⚠️ Erro ao ler cache:', error);
+      return null;
+    }
+  }
+
+  private saveUserNameToCache(userId: string, nome: string): void {
+    try {
+      const cacheKey = `user_name_${userId}`;
+      localStorage.setItem(cacheKey, nome);
+      console.log('AUTH SERVICE - 💾 Nome salvo no cache:', nome);
+    } catch (error) {
+      console.log('AUTH SERVICE - ⚠️ Erro ao salvar cache:', error);
+    }
+  }
+
+  // Método para obter dados instantâneos (sem esperar Firestore) - VERSÃO OTIMIZADA
+  getInstantUserData(): UserProfile | null {
+    console.log('AUTH SERVICE - ⚡ getInstantUserData chamado, user atual:', this.user);
+    
+    // Se já temos dados completos, retornar imediatamente
+    if (this.user && this.user.nome && this.user.nome.trim() !== '') {
+      console.log('AUTH SERVICE - ✅ Dados completos encontrados:', this.user);
+      return this.user;
+    }
+    
+    // Tentar obter do cache local se não temos dados completos
+    if (this.currentUserId) {
+      const cachedName = this.getUserNameFromCache(this.currentUserId);
+      if (cachedName && cachedName.trim() !== '') {
+        console.log('AUTH SERVICE - 💾 Nome do cache local:', cachedName);
+        
+        // Atualizar dados atuais com cache
+        const instantUser = {
+          id: this.currentUserId,
+          nome: cachedName,
+          email: this.user?.email || '',
+          telefone: this.user?.telefone || ''
+        };
+        
+        // Atualizar cache interno
+        this.user = instantUser;
+        this.userSubject.next({...instantUser});
+        console.log('AUTH SERVICE - 🔄 Dados atualizados com cache:', instantUser);
+        
+        return instantUser;
+      }
+    }
+    
+    console.log('AUTH SERVICE - ⚠️ Nenhum dado instantâneo disponível');
+    return this.user;
+  }
+
+
+
+  // Método DIRETO para buscar nome do usuário no Firestore
+  async getDirectUserName(): Promise<string> {
+    if (!this.currentUserId) {
+      console.log('AUTH SERVICE - ⚠️ Nenhum usuário logado');
+      return '';
+    }
+
+    try {
+      console.log('AUTH SERVICE - 🔍 Buscando nome DIRETO do Firestore para:', this.currentUserId);
+      
+      // Buscar DIRETO do Firestore
+      const docRef = this.firestore.firestore.doc(`users/${this.currentUserId}`);
+      const doc = await docRef.get();
+      
+      if (doc.exists) {
+        const userData = doc.data() as UserProfile;
+        const nome = userData?.nome || '';
+        
+        console.log('AUTH SERVICE - ✅ Nome encontrado DIRETO:', nome);
+        
+        if (nome && nome.trim() !== '') {
+          // Salvar no cache local para próximas vezes
+          this.saveUserNameToCache(this.currentUserId, nome);
+          
+          // Atualizar dados internos IMEDIATAMENTE
+          if (this.user) {
+            this.user.nome = nome;
+          } else {
+            this.user = {
+              id: this.currentUserId,
+              nome: nome,
+              email: '',
+              telefone: ''
+            };
+          }
+          
+          // Emitir atualização IMEDIATAMENTE
+          this.userSubject.next({...this.user});
+          console.log('AUTH SERVICE - 🔄 Nome atualizado DIRETAMENTE:', nome);
+          
+          return nome;
+        }
+      }
+      
+      console.log('AUTH SERVICE - ⚠️ Nome não encontrado no Firestore');
+      return '';
+      
+    } catch (error) {
+      console.log('AUTH SERVICE - ❌ Erro ao buscar nome direto:', error instanceof Error ? error.message : 'Erro desconhecido');
+      return '';
+    }
   }
 }

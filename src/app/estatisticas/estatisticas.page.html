@@ -8,9 +8,115 @@
 </ion-header>
 
 <ion-content class="ion-padding" style="--background: #fff;">
-  <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 60vh;">
-    <span style="font-size: 1.2rem; color: #222; text-align: center;">
-      Utilize a aplicação durante 1 semana para obter as estatíticas do seu consumo
+  <!-- Loading spinner -->
+  <div *ngIf="isLoading" style="display: flex; justify-content: center; align-items: center; height: 50vh;">
+    <ion-spinner name="crescent"></ion-spinner>
+  </div>
+
+  <!-- Estatísticas das listas -->
+  <div *ngIf="!isLoading && estatisticas.length > 0">
+    <h2 style="text-align: center; margin-bottom: 24px; color: #333;">Listas</h2>
+    
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      <div *ngFor="let stats of estatisticas" style="padding: 16px; background: #f8f9fa; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        
+        <!-- Cabeçalho da lista -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <div style="flex: 1;">
+            <h3 style="margin: 0 0 4px 0; color: #333; font-weight: 600;">{{ stats.lista.nome }}</h3>
+            <p style="margin: 0; color: #666; font-size: 0.9rem;">
+              {{ stats.detalhes.totalProdutos }} produto(s) • {{ stats.percentualConsumo | number:'1.0-1' }}% consumo médio
+            </p>
+          </div>
+          <div style="text-align: right;">
+            <span [style.color]="getCorNivel(stats.nivel)" style="font-weight: bold; font-size: 1.1rem;">
+              {{ stats.nivel }}
+            </span>
+            <p style="margin: 4px 0 0 0; color: #666; font-size: 0.8rem;">
+              {{ getDescricaoNivel(stats.nivel) }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Botão para expandir/contrair produtos -->
+        <ion-button 
+          (click)="toggleProdutos(stats.lista.nome)" 
+          fill="clear" 
+          size="small" 
+          style="width: 100%; margin: 8px 0;">
+          <ion-icon [name]="produtosExpandidos[stats.lista.nome] ? 'chevron-up' : 'chevron-down'" slot="start"></ion-icon>
+          {{ produtosExpandidos[stats.lista.nome] ? 'Ocultar' : 'Ver' }} Produtos
+        </ion-button>
+
+        <!-- Lista de produtos (expandível) -->
+        <div *ngIf="produtosExpandidos[stats.lista.nome]" style="margin-top: 12px;">
+          <div *ngFor="let produto of produtosPorLista[stats.lista.nome]" 
+               style="background: white; padding: 12px; margin-bottom: 8px; border-radius: 6px; border-left: 4px solid #007bff;">
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <h4 style="margin: 0; color: #333; font-size: 1rem;">{{ produto.produto }}</h4>
+              <span style="color: #666; font-size: 0.9rem;">{{ produto.quantidade }}</span>
+            </div>
+            
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 0.9rem; color: #666;">Consumido:</span>
+              <ion-input
+                [(ngModel)]="produto.quantidadeConsumida"
+                (ionBlur)="atualizarQuantidadeConsumida(produto.id, produto.quantidadeConsumida)"
+                type="number"
+                placeholder="0"
+                min="0"
+                step="0.1"
+                style="--background: #f8f9fa; --border-radius: 4px; max-width: 80px; text-align: center;">
+              </ion-input>
+              <span style="font-size: 0.9rem; color: #666;">{{ produto.unidade }}</span>
+              <span style="margin-left: auto; font-weight: bold;" [style.color]="getCorPercentual(produto)">
+                {{ calcularPercentualProduto(produto) }}%
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Estado vazio -->
+  <div *ngIf="!isLoading && estatisticas.length === 0 && !hasError" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 60vh;">
+    <ion-icon name="bar-chart-outline" style="font-size: 64px; color: #ccc; margin-bottom: 16px;"></ion-icon>
+    <span style="font-size: 1.2rem; color: #666; text-align: center;">
+      Crie algumas listas e adicione produtos para ver as estatísticas
     </span>
+    <div style="margin-top: 16px; display: flex; flex-direction: column; gap: 8px;">
+      <div style="display: flex; gap: 8px; justify-content: center;">
+        <ion-button (click)="testarEstatisticas()" color="primary" size="small">
+          Testar Carregamento
+        </ion-button>
+        <ion-button (click)="forcarRecarregamento()" color="secondary" size="small">
+          Forçar Recarregamento
+        </ion-button>
+      </div>
+      <div style="display: flex; gap: 8px; justify-content: center;">
+        <ion-button (click)="testarConexaoCompleta()" color="tertiary" size="small">
+          Debug Completo
+        </ion-button>
+        <ion-button (click)="carregarEstatisticas()" color="warning" size="small">
+          Recarregar
+        </ion-button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Estado de erro -->
+  <div *ngIf="!isLoading && hasError" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 60vh;">
+    <ion-icon name="warning-outline" style="font-size: 64px; color: #dc3545; margin-bottom: 16px;"></ion-icon>
+    <span style="font-size: 1.2rem; color: #dc3545; text-align: center; margin-bottom: 16px;">
+      Erro ao carregar estatísticas
+    </span>
+    <p style="color: #666; text-align: center; margin-bottom: 16px;">
+      {{ errorMessage }}
+    </p>
+    <ion-button (click)="carregarEstatisticas()" color="primary">
+      Tentar Novamente
+    </ion-button>
   </div>
 </ion-content>

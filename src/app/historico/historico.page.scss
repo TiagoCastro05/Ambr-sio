@@ -9,3 +9,32 @@ ul {
 li {
   background: #fff !important;
 }
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  
+  p {
+    font-size: 1.1rem;
+    margin: 0;
+  }
+}
+
+ion-item {
+  --background: #fff;
+  --border-color: #eee;
+  
+  ion-label {
+    h2 {
+      color: #222;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    
+    p {
+      color: #666;
+      font-size: 0.9rem;
+      margin: 2px 0;
+    }
+  }
+}
